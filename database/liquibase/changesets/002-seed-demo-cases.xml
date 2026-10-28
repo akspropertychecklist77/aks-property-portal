@@ -6,7 +6,35 @@
         http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-latest.xsd">
 
     <changeSet id="002-seed-demo-cases" author="akspropertychecklist">
-        <comment>Seed initial demonstration cases across Stages 8, 7, 4, and 2</comment>
+        <comment>Seed initial demonstration users and cases across Stages 8, 7, 4, and 2</comment>
+
+        <!-- Initial Admin & Advocate User -->
+        <insert tableName="users">
+            <column name="id" value="usr_adv_001"/>
+            <column name="username" value="advocate.saravanan"/>
+            <column name="email" value="akspropertychecklist77@gmail.com"/>
+            <!-- Argon2/Bcrypt hash for default temporary password -->
+            <column name="password_hash" value="$2a$12$K1G2u4Hq/9N0vPZ2bJ8xGe1J4qD8yM6pA8wE1rT3yU5iO7pQ9sW0e"/>
+            <column name="full_name" value="Advocate A.K. Saravanan"/>
+            <column name="role" value="ADVOCATE_ADMIN"/>
+            <column name="phone" value="+91 98400 12345"/>
+            <column name="bar_council_reg_no" value="MS/1245/2005"/>
+            <column name="is_active" valueBoolean="true"/>
+            <column name="is_email_verified" valueBoolean="true"/>
+        </insert>
+
+        <!-- Initial Operations & Research Staff User -->
+        <insert tableName="users">
+            <column name="id" value="usr_staff_002"/>
+            <column name="username" value="research.ops"/>
+            <column name="email" value="ops@akspropertychecklist.in"/>
+            <column name="password_hash" value="$2a$12$K1G2u4Hq/9N0vPZ2bJ8xGe1J4qD8yM6pA8wE1rT3yU5iO7pQ9sW0e"/>
+            <column name="full_name" value="Legal Research Desk"/>
+            <column name="role" value="RESEARCH_STAFF"/>
+            <column name="phone" value="+91 98400 54321"/>
+            <column name="is_active" valueBoolean="true"/>
+            <column name="is_email_verified" valueBoolean="true"/>
+        </insert>
 
         <!-- Case 1: Delivered (Stage 8) -->
         <insert tableName="cases">
@@ -82,3 +110,4 @@
     </changeSet>
 
 </databaseChangeLog>
+

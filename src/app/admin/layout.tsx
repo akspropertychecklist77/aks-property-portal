@@ -91,7 +91,7 @@ export default function AdminLayout({
             <span>SOP Standard:</span>
             <span className="font-bold text-amber-400">Legal Opinion - 8 Stage Workflow</span>
           </div>
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-4">
             <a 
               href="https://akspropertychecklist.in" 
               target="_blank" 
@@ -101,6 +101,12 @@ export default function AdminLayout({
               <span>Public Website</span>
               <ExternalLink className="w-3 h-3" />
             </a>
+            <Link
+              href="/login"
+              className="text-xs font-semibold px-2.5 py-1 rounded-md bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white transition-colors"
+            >
+              Sign Out
+            </Link>
           </div>
         </header>
 

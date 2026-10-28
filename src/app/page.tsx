@@ -45,7 +45,7 @@ export default function PortalHomePage() {
               ← Back to Main Website
             </a>
             <Link
-              href="/admin"
+              href="/login"
               className="px-4 py-2 text-xs font-bold rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 hover:border-slate-600 transition-all flex items-center gap-1.5 shadow-sm"
             >
               <Lock className="w-3.5 h-3.5 text-amber-400" />

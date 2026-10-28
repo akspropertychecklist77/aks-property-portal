@@ -4,6 +4,49 @@
 -- Generated from Liquibase Changelog Master
 -- =============================================================================
 
+-- 0. Users & Authentication Table (OWASP Compliant)
+CREATE TABLE IF NOT EXISTS users (
+    id VARCHAR(36) PRIMARY KEY,
+    username VARCHAR(80) UNIQUE NOT NULL,
+    email VARCHAR(150) UNIQUE NOT NULL,
+    password_hash VARCHAR(255) NOT NULL,
+    full_name VARCHAR(150) NOT NULL,
+    role VARCHAR(40) DEFAULT 'RESEARCH_STAFF' NOT NULL, -- SUPER_ADMIN, ADVOCATE_ADMIN, RESEARCH_STAFF, ACCOUNTS_STAFF, CLIENT
+    phone VARCHAR(30),
+    bar_council_reg_no VARCHAR(60),
+    is_active BOOLEAN DEFAULT 1 NOT NULL,
+    is_email_verified BOOLEAN DEFAULT 0 NOT NULL,
+    email_verified_at TIMESTAMP,
+    failed_login_attempts INT DEFAULT 0 NOT NULL,
+    locked_until TIMESTAMP,
+    last_login_at TIMESTAMP,
+    last_login_ip VARCHAR(45),
+    password_changed_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    two_factor_enabled BOOLEAN DEFAULT 0 NOT NULL,
+    two_factor_secret VARCHAR(255),
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP NOT NULL,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP NOT NULL
+);
+
+CREATE INDEX IF NOT EXISTS idx_users_email ON users(email);
+CREATE INDEX IF NOT EXISTS idx_users_username ON users(username);
+CREATE INDEX IF NOT EXISTS idx_users_role ON users(role);
+
+-- 0b. User Sessions & Refresh Tokens
+CREATE TABLE IF NOT EXISTS user_sessions (
+    id VARCHAR(36) PRIMARY KEY,
+    user_id VARCHAR(36) NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    session_token VARCHAR(255) UNIQUE NOT NULL,
+    ip_address VARCHAR(45),
+    user_agent VARCHAR(500),
+    is_revoked BOOLEAN DEFAULT 0 NOT NULL,
+    expires_at TIMESTAMP NOT NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP NOT NULL
+);
+
+CREATE INDEX IF NOT EXISTS idx_sessions_token ON user_sessions(session_token);
+CREATE INDEX IF NOT EXISTS idx_sessions_user_id ON user_sessions(user_id);
+
 -- 1. Cases Master Table
 CREATE TABLE IF NOT EXISTS cases (
     id VARCHAR(30) PRIMARY KEY,
@@ -137,9 +180,15 @@ CREATE INDEX IF NOT EXISTS idx_logs_case_id ON case_milestone_logs(case_id);
 -- =============================================================================
 -- Initial Demonstration Seed Data
 -- =============================================================================
+INSERT OR IGNORE INTO users (id, username, email, password_hash, full_name, role, phone, bar_council_reg_no, is_active, is_email_verified)
+VALUES 
+('usr_adv_001', 'advocate.saravanan', 'akspropertychecklist77@gmail.com', '$2a$12$K1G2u4Hq/9N0vPZ2bJ8xGe1J4qD8yM6pA8wE1rT3yU5iO7pQ9sW0e', 'Advocate A.K. Saravanan', 'ADVOCATE_ADMIN', '+91 98400 12345', 'MS/1245/2005', 1, 1),
+('usr_staff_002', 'research.ops', 'ops@akspropertychecklist.in', '$2a$12$K1G2u4Hq/9N0vPZ2bJ8xGe1J4qD8yM6pA8wE1rT3yU5iO7pQ9sW0e', 'Legal Research Desk', 'RESEARCH_STAFF', '+91 98400 54321', NULL, 1, 1);
+
 INSERT OR IGNORE INTO cases (id, client_name, client_phone, client_email, service_package, current_stage, district, property_address, survey_number, total_fee, advance_amount, balance_amount, payment_status, case_status)
 VALUES 
 ('AK-2026-001', 'K. Vellingiri', '+91 98422 12345', 'client.vel@example.com', 'Legal Opinion (Standard)', 8, 'Coimbatore', 'S.F. No. 342/1B, Saravanampatti Village, Coimbatore North Taluk', 'S.F. No. 342/1B', 6500.00, 5200.00, 1300.00, 'fully_paid', 'completed'),
 ('AK-2026-002', 'S. Sundaramurthy', '+91 94433 67890', 'sundar.s@example.com', 'Legal Opinion (Standard)', 7, 'Tiruppur', 'Plot No. 44, Sri Krishna Nagar, Kangeyam Road, Tiruppur', 'R.S. No. 189/3', 6500.00, 5200.00, 1300.00, 'advance_paid', 'active'),
 ('AK-2026-003', 'Dr. M. Radhakrishnan', '+91 98840 55443', 'm.radha@example.com', 'Comprehensive Due Diligence', 4, 'Chennai', 'Flat 3B, Emerald Towers, 2nd Main Road, Anna Nagar, Chennai', 'T.S. No. 45, Block 12', 12500.00, 10000.00, 2500.00, 'advance_paid', 'active'),
 ('AK-2026-004', 'Anandhi Parthiban', '+91 97900 88776', 'anandhi.p@example.com', 'Legal Opinion (Standard)', 2, 'Erode', 'Thindal Village, S.F. No. 82/4A, Erode Taluk', 'S.F. No. 82/4A', 6500.00, 5200.00, 1300.00, 'advance_pending', 'active');
+
