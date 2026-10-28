@@ -83,6 +83,10 @@ CREATE TABLE IF NOT EXISTS ec_records (
     claimant TEXT,
     is_encumbrance_flag BOOLEAN DEFAULT 0 NOT NULL,
     remarks TEXT,
+    doc_file_name VARCHAR(255),
+    doc_file_url TEXT,
+    source_type VARCHAR(50) DEFAULT 'MANUAL_UPLOAD', -- MANUAL_UPLOAD or TNREGINET_AUTO_FETCH
+    verification_status VARCHAR(50) DEFAULT 'VERIFIED',
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP NOT NULL
 );
 
@@ -101,7 +105,10 @@ CREATE TABLE IF NOT EXISTS parent_documents (
     buyer_name VARCHAR(150),
     extent VARCHAR(100),
     link_verified BOOLEAN DEFAULT 1 NOT NULL,
-    gap_analysis_notes TEXT
+    gap_analysis_notes TEXT,
+    doc_file_name VARCHAR(255),
+    doc_file_url TEXT,
+    source_type VARCHAR(50) DEFAULT 'MANUAL_UPLOAD'
 );
 
 CREATE INDEX IF NOT EXISTS idx_parent_case_id ON parent_documents(case_id);
@@ -118,7 +125,10 @@ CREATE TABLE IF NOT EXISTS revenue_records (
     village_taluk VARCHAR(120),
     chitta_adangal_verified BOOLEAN DEFAULT 0 NOT NULL,
     fmb_sketch_verified BOOLEAN DEFAULT 0 NOT NULL,
-    guideline_value DECIMAL(10,2)
+    guideline_value DECIMAL(10,2),
+    patta_file_url TEXT,
+    fmb_file_url TEXT,
+    source_type VARCHAR(50) DEFAULT 'MANUAL_UPLOAD'
 );
 
 -- 5. Legal Opinions (Advocate A.K. Saravanan Scrutiny)

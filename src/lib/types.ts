@@ -28,6 +28,10 @@ export interface ECRecord {
   parties: string;
   natureOfDeed: string;
   verified: boolean;
+  docFileName?: string;
+  docFileUrl?: string;
+  sourceType?: 'MANUAL_UPLOAD' | 'TNREGINET_AUTO_FETCH';
+  verificationStatus?: 'VERIFIED' | 'PENDING_VALIDATION' | 'FLAGGED';
 }
 
 export interface ParentDocument {
@@ -40,6 +44,9 @@ export interface ParentDocument {
   extent: string;
   scheduleMatches: boolean;
   notes: string;
+  docFileName?: string;
+  docFileUrl?: string;
+  sourceType?: 'MANUAL_UPLOAD' | 'TNREGINET_AUTO_FETCH';
 }
 
 export interface CurrentDocument {
@@ -51,6 +58,9 @@ export interface CurrentDocument {
   tslrVerified: boolean;
   revenueStatus: 'Clear' | 'Mismatch' | 'Under Revenue Query';
   notes: string;
+  pattaFileUrl?: string;
+  fmbFileUrl?: string;
+  sourceType?: 'MANUAL_UPLOAD' | 'ESERVICES_TN_AUTO_FETCH';
 }
 
 export interface LegalOpinionSummary {

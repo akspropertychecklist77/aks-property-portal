@@ -37,3 +37,4 @@ const usersCount = db.prepare('SELECT COUNT(*) as count FROM users;').get();
 console.log(`👤 Seeded Users: ${usersCount.count}`);
 
 db.close();
+
