@@ -6,7 +6,8 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "next lint"
+    "lint": "next lint",
+    "setup:d1": "node scripts/setup-cloudflare-d1.mjs"
   },
   "dependencies": {
     "better-sqlite3": "^13.0.3",
