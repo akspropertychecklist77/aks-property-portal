@@ -40,4 +40,8 @@ database/*.db-shm
 database/*.db-wal
 *.db
 
+# opennext and cloudflare
+.open-next/
+.wrangler/
+
 
