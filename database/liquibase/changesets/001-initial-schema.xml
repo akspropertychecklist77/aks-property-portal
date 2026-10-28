@@ -1,0 +1,362 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog
+    xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+        http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-latest.xsd">
+
+    <!-- ========================================================================= -->
+    <!-- 1. CASES MASTER TABLE                                                     -->
+    <!-- ========================================================================= -->
+    <changeSet id="001-create-table-cases" author="akspropertychecklist">
+        <comment>Core legal case records supporting Stages 1 to 8</comment>
+        <createTable tableName="cases">
+            <column name="id" type="VARCHAR(30)">
+                <constraints primaryKey="true" nullable="false"/>
+            </column>
+            <column name="client_name" type="VARCHAR(150)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="client_phone" type="VARCHAR(30)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="client_email" type="VARCHAR(150)">
+                <constraints nullable="true"/>
+            </column>
+            <column name="service_package" type="VARCHAR(80)" defaultValue="Legal Opinion (Standard)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="current_stage" type="INT" defaultValueNumeric="1">
+                <constraints nullable="false"/>
+            </column>
+            <column name="district" type="VARCHAR(60)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="property_address" type="TEXT">
+                <constraints nullable="true"/>
+            </column>
+            <column name="survey_number" type="VARCHAR(120)">
+                <constraints nullable="true"/>
+            </column>
+            <column name="total_fee" type="DECIMAL(10,2)" defaultValueNumeric="6500.00">
+                <constraints nullable="false"/>
+            </column>
+            <column name="advance_amount" type="DECIMAL(10,2)" defaultValueNumeric="5200.00">
+                <constraints nullable="false"/>
+            </column>
+            <column name="balance_amount" type="DECIMAL(10,2)" defaultValueNumeric="1300.00">
+                <constraints nullable="false"/>
+            </column>
+            <column name="payment_status" type="VARCHAR(30)" defaultValue="advance_pending">
+                <constraints nullable="false"/>
+            </column>
+            <column name="case_status" type="VARCHAR(30)" defaultValue="active">
+                <constraints nullable="false"/>
+            </column>
+            <column name="created_at" type="TIMESTAMP" defaultValueComputed="CURRENT_TIMESTAMP">
+                <constraints nullable="false"/>
+            </column>
+            <column name="updated_at" type="TIMESTAMP" defaultValueComputed="CURRENT_TIMESTAMP">
+                <constraints nullable="false"/>
+            </column>
+        </createTable>
+
+        <createIndex tableName="cases" indexName="idx_cases_phone">
+            <column name="client_phone"/>
+        </createIndex>
+        <createIndex tableName="cases" indexName="idx_cases_stage">
+            <column name="current_stage"/>
+        </createIndex>
+    </changeSet>
+
+    <!-- ========================================================================= -->
+    <!-- 2. EC RECORDS (Sheet 1 - Encumbrance Certificate 30-Year Index)           -->
+    <!-- ========================================================================= -->
+    <changeSet id="002-create-table-ec-records" author="akspropertychecklist">
+        <comment>30-year sub-registrar encumbrance search entries</comment>
+        <createTable tableName="ec_records">
+            <column name="id" type="VARCHAR(36)">
+                <constraints primaryKey="true" nullable="false"/>
+            </column>
+            <column name="case_id" type="VARCHAR(30)">
+                <constraints nullable="false" foreignKeyName="fk_ec_case_id" references="cases(id)"/>
+            </column>
+            <column name="serial_no" type="INT">
+                <constraints nullable="false"/>
+            </column>
+            <column name="search_period" type="VARCHAR(80)">
+                <constraints nullable="true"/>
+            </column>
+            <column name="doc_number" type="VARCHAR(60)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="sro_name" type="VARCHAR(120)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="deed_nature" type="VARCHAR(100)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="executant" type="TEXT">
+                <constraints nullable="true"/>
+            </column>
+            <column name="claimant" type="TEXT">
+                <constraints nullable="true"/>
+            </column>
+            <column name="is_encumbrance_flag" type="BOOLEAN" defaultValueBoolean="false">
+                <constraints nullable="false"/>
+            </column>
+            <column name="remarks" type="TEXT">
+                <constraints nullable="true"/>
+            </column>
+            <column name="created_at" type="TIMESTAMP" defaultValueComputed="CURRENT_TIMESTAMP">
+                <constraints nullable="false"/>
+            </column>
+        </createTable>
+
+        <createIndex tableName="ec_records" indexName="idx_ec_case_id">
+            <column name="case_id"/>
+        </createIndex>
+    </changeSet>
+
+    <!-- ========================================================================= -->
+    <!-- 3. PARENT DOCUMENTS (Sheet 2 - Title Chain Genealogy)                      -->
+    <!-- ========================================================================= -->
+    <changeSet id="003-create-table-parent-docs" author="akspropertychecklist">
+        <comment>Historical title deeds tracking flow from root owner to seller</comment>
+        <createTable tableName="parent_documents">
+            <column name="id" type="VARCHAR(36)">
+                <constraints primaryKey="true" nullable="false"/>
+            </column>
+            <column name="case_id" type="VARCHAR(30)">
+                <constraints nullable="false" foreignKeyName="fk_parent_case_id" references="cases(id)"/>
+            </column>
+            <column name="sequence_order" type="INT">
+                <constraints nullable="false"/>
+            </column>
+            <column name="deed_type" type="VARCHAR(100)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="doc_number" type="VARCHAR(60)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="sro_name" type="VARCHAR(120)">
+                <constraints nullable="true"/>
+            </column>
+            <column name="registration_date" type="VARCHAR(30)">
+                <constraints nullable="true"/>
+            </column>
+            <column name="seller_name" type="VARCHAR(150)">
+                <constraints nullable="true"/>
+            </column>
+            <column name="buyer_name" type="VARCHAR(150)">
+                <constraints nullable="true"/>
+            </column>
+            <column name="extent" type="VARCHAR(100)">
+                <constraints nullable="true"/>
+            </column>
+            <column name="link_verified" type="BOOLEAN" defaultValueBoolean="true">
+                <constraints nullable="false"/>
+            </column>
+            <column name="gap_analysis_notes" type="TEXT">
+                <constraints nullable="true"/>
+            </column>
+        </createTable>
+
+        <createIndex tableName="parent_documents" indexName="idx_parent_case_id">
+            <column name="case_id"/>
+        </createIndex>
+    </changeSet>
+
+    <!-- ========================================================================= -->
+    <!-- 4. REVENUE RECORDS (Sheet 3 - Current Deed & Patta Passbook)               -->
+    <!-- ========================================================================= -->
+    <changeSet id="004-create-table-revenue-records" author="akspropertychecklist">
+        <comment>Revenue compliance, Patta, Chitta, FMB, and guideline values</comment>
+        <createTable tableName="revenue_records">
+            <column name="id" type="VARCHAR(36)">
+                <constraints primaryKey="true" nullable="false"/>
+            </column>
+            <column name="case_id" type="VARCHAR(30)">
+                <constraints nullable="false" unique="true" foreignKeyName="fk_revenue_case_id" references="cases(id)"/>
+            </column>
+            <column name="current_sale_deed_no" type="VARCHAR(60)">
+                <constraints nullable="true"/>
+            </column>
+            <column name="patta_number" type="VARCHAR(60)">
+                <constraints nullable="true"/>
+            </column>
+            <column name="patta_holder_name" type="VARCHAR(150)">
+                <constraints nullable="true"/>
+            </column>
+            <column name="field_survey_no" type="VARCHAR(80)">
+                <constraints nullable="true"/>
+            </column>
+            <column name="sub_division" type="VARCHAR(60)">
+                <constraints nullable="true"/>
+            </column>
+            <column name="village_taluk" type="VARCHAR(120)">
+                <constraints nullable="true"/>
+            </column>
+            <column name="chitta_adangal_verified" type="BOOLEAN" defaultValueBoolean="false">
+                <constraints nullable="false"/>
+            </column>
+            <column name="fmb_sketch_verified" type="BOOLEAN" defaultValueBoolean="false">
+                <constraints nullable="false"/>
+            </column>
+            <column name="guideline_value" type="DECIMAL(10,2)">
+                <constraints nullable="true"/>
+            </column>
+        </createTable>
+    </changeSet>
+
+    <!-- ========================================================================= -->
+    <!-- 5. LEGAL OPINIONS (Sheet 4 - Advocate A.K. Saravanan Scrutiny)            -->
+    <!-- ========================================================================= -->
+    <changeSet id="005-create-table-legal-opinions" author="akspropertychecklist">
+        <comment>Advocate title assessment, caveats, and sign-off</comment>
+        <createTable tableName="legal_opinions">
+            <column name="id" type="VARCHAR(36)">
+                <constraints primaryKey="true" nullable="false"/>
+            </column>
+            <column name="case_id" type="VARCHAR(30)">
+                <constraints nullable="false" unique="true" foreignKeyName="fk_opinion_case_id" references="cases(id)"/>
+            </column>
+            <column name="advocate_name" type="VARCHAR(120)" defaultValue="Advocate A.K. Saravanan">
+                <constraints nullable="false"/>
+            </column>
+            <column name="bar_council_reg_no" type="VARCHAR(60)">
+                <constraints nullable="true"/>
+            </column>
+            <column name="root_of_title" type="TEXT">
+                <constraints nullable="true"/>
+            </column>
+            <column name="marketable_title_certified" type="BOOLEAN" defaultValueBoolean="false">
+                <constraints nullable="false"/>
+            </column>
+            <column name="encumbrance_status" type="VARCHAR(60)" defaultValue="Clear">
+                <constraints nullable="false"/>
+            </column>
+            <column name="legal_scrutiny_summary" type="TEXT">
+                <constraints nullable="true"/>
+            </column>
+            <column name="special_conditions" type="TEXT">
+                <constraints nullable="true"/>
+            </column>
+            <column name="sign_off_status" type="VARCHAR(30)" defaultValue="draft">
+                <constraints nullable="false"/>
+            </column>
+            <column name="signed_at" type="TIMESTAMP">
+                <constraints nullable="true"/>
+            </column>
+        </createTable>
+    </changeSet>
+
+    <!-- ========================================================================= -->
+    <!-- 6. CASE DOCUMENTS (PDFs, Deeds, Watermarked Previews)                     -->
+    <!-- ========================================================================= -->
+    <changeSet id="006-create-table-case-documents" author="akspropertychecklist">
+        <comment>File attachments and generated opinion PDFs</comment>
+        <createTable tableName="case_documents">
+            <column name="id" type="VARCHAR(36)">
+                <constraints primaryKey="true" nullable="false"/>
+            </column>
+            <column name="case_id" type="VARCHAR(30)">
+                <constraints nullable="false" foreignKeyName="fk_doc_case_id" references="cases(id)"/>
+            </column>
+            <column name="file_name" type="VARCHAR(255)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="file_category" type="VARCHAR(50)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="storage_path" type="VARCHAR(500)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="file_size_bytes" type="BIGINT">
+                <constraints nullable="true"/>
+            </column>
+            <column name="is_watermarked" type="BOOLEAN" defaultValueBoolean="false">
+                <constraints nullable="false"/>
+            </column>
+            <column name="uploaded_at" type="TIMESTAMP" defaultValueComputed="CURRENT_TIMESTAMP">
+                <constraints nullable="false"/>
+            </column>
+        </createTable>
+
+        <createIndex tableName="case_documents" indexName="idx_docs_case_id">
+            <column name="case_id"/>
+        </createIndex>
+    </changeSet>
+
+    <!-- ========================================================================= -->
+    <!-- 7. PAYMENTS (80% Advance & 20% Balance Policy)                           -->
+    <!-- ========================================================================= -->
+    <changeSet id="007-create-table-payments" author="akspropertychecklist">
+        <comment>Payment milestones enforcing Stage 3 and Stage 7 gates</comment>
+        <createTable tableName="payments">
+            <column name="id" type="VARCHAR(36)">
+                <constraints primaryKey="true" nullable="false"/>
+            </column>
+            <column name="case_id" type="VARCHAR(30)">
+                <constraints nullable="false" foreignKeyName="fk_payment_case_id" references="cases(id)"/>
+            </column>
+            <column name="payment_stage" type="VARCHAR(30)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="amount" type="DECIMAL(10,2)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="payment_mode" type="VARCHAR(40)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="transaction_ref" type="VARCHAR(100)">
+                <constraints nullable="true"/>
+            </column>
+            <column name="verified_by" type="VARCHAR(100)">
+                <constraints nullable="true"/>
+            </column>
+            <column name="paid_at" type="TIMESTAMP" defaultValueComputed="CURRENT_TIMESTAMP">
+                <constraints nullable="false"/>
+            </column>
+        </createTable>
+
+        <createIndex tableName="payments" indexName="idx_payments_case_id">
+            <column name="case_id"/>
+        </createIndex>
+    </changeSet>
+
+    <!-- ========================================================================= -->
+    <!-- 8. CASE MILESTONE AUDIT LOG (Timeline History)                            -->
+    <!-- ========================================================================= -->
+    <changeSet id="008-create-table-milestone-logs" author="akspropertychecklist">
+        <comment>Audit trail logging movement between Stages 1 to 8</comment>
+        <createTable tableName="case_milestone_logs">
+            <column name="id" type="VARCHAR(36)">
+                <constraints primaryKey="true" nullable="false"/>
+            </column>
+            <column name="case_id" type="VARCHAR(30)">
+                <constraints nullable="false" foreignKeyName="fk_log_case_id" references="cases(id)"/>
+            </column>
+            <column name="from_stage" type="INT">
+                <constraints nullable="true"/>
+            </column>
+            <column name="to_stage" type="INT">
+                <constraints nullable="false"/>
+            </column>
+            <column name="action_notes" type="TEXT">
+                <constraints nullable="true"/>
+            </column>
+            <column name="triggered_by" type="VARCHAR(100)" defaultValue="system">
+                <constraints nullable="false"/>
+            </column>
+            <column name="logged_at" type="TIMESTAMP" defaultValueComputed="CURRENT_TIMESTAMP">
+                <constraints nullable="false"/>
+            </column>
+        </createTable>
+
+        <createIndex tableName="case_milestone_logs" indexName="idx_logs_case_id">
+            <column name="case_id"/>
+        </createIndex>
+    </changeSet>
+
+</databaseChangeLog>

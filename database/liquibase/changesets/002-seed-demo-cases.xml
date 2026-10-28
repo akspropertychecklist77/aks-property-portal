@@ -1,0 +1,84 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog
+    xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+        http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-latest.xsd">
+
+    <changeSet id="002-seed-demo-cases" author="akspropertychecklist">
+        <comment>Seed initial demonstration cases across Stages 8, 7, 4, and 2</comment>
+
+        <!-- Case 1: Delivered (Stage 8) -->
+        <insert tableName="cases">
+            <column name="id" value="AK-2026-001"/>
+            <column name="client_name" value="K. Vellingiri"/>
+            <column name="client_phone" value="+91 98422 12345"/>
+            <column name="client_email" value="client.vel@example.com"/>
+            <column name="service_package" value="Legal Opinion (Standard)"/>
+            <column name="current_stage" valueNumeric="8"/>
+            <column name="district" value="Coimbatore"/>
+            <column name="property_address" value="S.F. No. 342/1B, Saravanampatti Village, Coimbatore North Taluk"/>
+            <column name="survey_number" value="S.F. No. 342/1B"/>
+            <column name="total_fee" valueNumeric="6500.00"/>
+            <column name="advance_amount" valueNumeric="5200.00"/>
+            <column name="balance_amount" valueNumeric="1300.00"/>
+            <column name="payment_status" value="fully_paid"/>
+            <column name="case_status" value="completed"/>
+        </insert>
+
+        <!-- Case 2: Watermarked Preview Available (Stage 7) -->
+        <insert tableName="cases">
+            <column name="id" value="AK-2026-002"/>
+            <column name="client_name" value="S. Sundaramurthy"/>
+            <column name="client_phone" value="+91 94433 67890"/>
+            <column name="client_email" value="sundar.s@example.com"/>
+            <column name="service_package" value="Legal Opinion (Standard)"/>
+            <column name="current_stage" valueNumeric="7"/>
+            <column name="district" value="Tiruppur"/>
+            <column name="property_address" value="Plot No. 44, Sri Krishna Nagar, Kangeyam Road, Tiruppur"/>
+            <column name="survey_number" value="R.S. No. 189/3"/>
+            <column name="total_fee" valueNumeric="6500.00"/>
+            <column name="advance_amount" valueNumeric="5200.00"/>
+            <column name="balance_amount" valueNumeric="1300.00"/>
+            <column name="payment_status" value="advance_paid"/>
+            <column name="case_status" value="active"/>
+        </insert>
+
+        <!-- Case 3: Job Card Indexing Active (Stage 4) -->
+        <insert tableName="cases">
+            <column name="id" value="AK-2026-003"/>
+            <column name="client_name" value="Dr. M. Radhakrishnan"/>
+            <column name="client_phone" value="+91 98840 55443"/>
+            <column name="client_email" value="m.radha@example.com"/>
+            <column name="service_package" value="Comprehensive Due Diligence"/>
+            <column name="current_stage" valueNumeric="4"/>
+            <column name="district" value="Chennai"/>
+            <column name="property_address" value="Flat 3B, Emerald Towers, 2nd Main Road, Anna Nagar, Chennai"/>
+            <column name="survey_number" value="T.S. No. 45, Block 12"/>
+            <column name="total_fee" valueNumeric="12500.00"/>
+            <column name="advance_amount" valueNumeric="10000.00"/>
+            <column name="balance_amount" valueNumeric="2500.00"/>
+            <column name="payment_status" value="advance_paid"/>
+            <column name="case_status" value="active"/>
+        </insert>
+
+        <!-- Case 4: Discovery Call Scheduled (Stage 2) -->
+        <insert tableName="cases">
+            <column name="id" value="AK-2026-004"/>
+            <column name="client_name" value="Anandhi Parthiban"/>
+            <column name="client_phone" value="+91 97900 88776"/>
+            <column name="client_email" value="anandhi.p@example.com"/>
+            <column name="service_package" value="Legal Opinion (Standard)"/>
+            <column name="current_stage" valueNumeric="2"/>
+            <column name="district" value="Erode"/>
+            <column name="property_address" value="Thindal Village, S.F. No. 82/4A, Erode Taluk"/>
+            <column name="survey_number" value="S.F. No. 82/4A"/>
+            <column name="total_fee" valueNumeric="6500.00"/>
+            <column name="advance_amount" valueNumeric="5200.00"/>
+            <column name="balance_amount" valueNumeric="1300.00"/>
+            <column name="payment_status" value="advance_pending"/>
+            <column name="case_status" value="active"/>
+        </insert>
+    </changeSet>
+
+</databaseChangeLog>

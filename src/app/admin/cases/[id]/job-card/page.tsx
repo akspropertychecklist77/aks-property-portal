@@ -381,3 +381,4 @@ export default function JobCardPage({ params }: { params: Promise<{ id: string }
     </div>
   );
 }
+
