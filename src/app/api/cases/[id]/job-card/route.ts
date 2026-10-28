@@ -101,15 +101,17 @@ export async function PUT(
       await executeRun(
         `INSERT INTO revenue_records (
           id, case_id, patta_number, patta_holder_name, field_survey_no,
-          sub_division, chitta_adangal_verified, fmb_sketch_verified,
+          sub_division, village_taluk, chitta_adangal_verified, fmb_sketch_verified,
           patta_file_url, fmb_file_url, source_type
-        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
         ON CONFLICT(case_id) DO UPDATE SET
-          patta_number = excluded.patta_number,
-          patta_holder_name = excluded.patta_holder_name,
-          field_survey_no = excluded.field_survey_no,
-          chitta_adangal_verified = excluded.chitta_adangal_verified,
-          fmb_sketch_verified = excluded.fmb_sketch_verified,
+          patta_number = CASE WHEN excluded.patta_number != '' THEN excluded.patta_number ELSE revenue_records.patta_number END,
+          patta_holder_name = CASE WHEN excluded.patta_holder_name != '' THEN excluded.patta_holder_name ELSE revenue_records.patta_holder_name END,
+          field_survey_no = CASE WHEN excluded.field_survey_no != '' THEN excluded.field_survey_no ELSE revenue_records.field_survey_no END,
+          sub_division = CASE WHEN excluded.sub_division != '' THEN excluded.sub_division ELSE revenue_records.sub_division END,
+          village_taluk = CASE WHEN excluded.village_taluk != '' THEN excluded.village_taluk ELSE revenue_records.village_taluk END,
+          chitta_adangal_verified = CASE WHEN excluded.chitta_adangal_verified = 1 THEN 1 ELSE revenue_records.chitta_adangal_verified END,
+          fmb_sketch_verified = CASE WHEN excluded.fmb_sketch_verified = 1 THEN 1 ELSE revenue_records.fmb_sketch_verified END,
           patta_file_url = COALESCE(excluded.patta_file_url, revenue_records.patta_file_url),
           fmb_file_url = COALESCE(excluded.fmb_file_url, revenue_records.fmb_file_url),
           source_type = excluded.source_type;`,
@@ -120,6 +122,7 @@ export async function PUT(
           data.pattaHolder || '',
           data.surveyNumber || '',
           data.subDivision || '',
+          data.villageTaluk || '',
           data.chittaVerified ? 1 : 0,
           data.fmbVerified ? 1 : 0,
           data.pattaFileUrl || null,
@@ -204,3 +207,4 @@ export async function DELETE(
     return NextResponse.json({ success: false, error: error.message }, { status: 500 });
   }
 }
+

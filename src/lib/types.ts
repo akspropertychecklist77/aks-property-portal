@@ -61,6 +61,8 @@ export interface CurrentDocument {
   pattaFileUrl?: string;
   fmbFileUrl?: string;
   sourceType?: 'MANUAL_UPLOAD' | 'ESERVICES_TN_AUTO_FETCH';
+  subDivision?: string;
+  villageTaluk?: string;
 }
 
 export interface LegalOpinionSummary {
