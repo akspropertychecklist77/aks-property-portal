@@ -36,13 +36,37 @@ export default function NewCasePage() {
     }));
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setSaving(true);
-    setTimeout(() => {
-      // In production this writes to database/API; for demo we route to the active job card
-      router.push("/admin/cases/AK-2026-003/job-card");
-    }, 700);
+    try {
+      const res = await fetch("/api/cases", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          client_name: formData.clientName,
+          client_phone: formData.clientPhone,
+          client_email: formData.clientEmail,
+          service_package: formData.servicePackage,
+          district: formData.district,
+          property_address: formData.propertyAddress,
+          survey_number: formData.surveyNumber,
+          total_fee: formData.totalFee,
+          advance_amount: formData.advancePaid,
+        }),
+      });
+      const data = await res.json();
+      if (data.success && data.caseId) {
+        router.push(`/admin/pipeline`);
+      } else {
+        router.push("/admin/pipeline");
+      }
+    } catch (err) {
+      console.error("Case creation failed:", err);
+      router.push("/admin/pipeline");
+    } finally {
+      setSaving(false);
+    }
   };
 
   return (

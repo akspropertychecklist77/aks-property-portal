@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { 
   FolderKanban, 
@@ -20,6 +20,70 @@ import { ClientCase } from '@/lib/types';
 
 export default function AdminDashboardPage() {
   const [cases, setCases] = useState<ClientCase[]>(INITIAL_CASES);
+
+  useEffect(() => {
+    fetch('/api/cases')
+      .then(res => res.json())
+      .then(result => {
+        if (result.success && Array.isArray(result.data) && result.data.length > 0) {
+          setCases(prev => {
+            return result.data.map((dbRow: any) => {
+              const existing = prev.find(p => p.id === dbRow.id);
+              const stageIndex = (dbRow.current_stage || 1) - 1;
+              const stageId = PROCESS_STAGES[stageIndex]?.id || '1_ENQUIRY';
+
+              if (existing) {
+                return {
+                  ...existing,
+                  currentStage: stageId,
+                  advancePaid: dbRow.payment_status === 'advance_paid' || dbRow.payment_status === 'fully_paid',
+                };
+              }
+
+              return {
+                id: dbRow.id,
+                clientName: dbRow.client_name,
+                clientPhone: dbRow.client_phone,
+                clientEmail: dbRow.client_email,
+                serviceRequired: dbRow.service_package,
+                district: dbRow.district,
+                surveyNumber: dbRow.survey_number || '',
+                totalAgreedCost: dbRow.total_fee || 6500,
+                advanceAmount: dbRow.advance_amount || 5200,
+                advancePaid: dbRow.payment_status === 'advance_paid' || dbRow.payment_status === 'fully_paid',
+                balanceAmount: dbRow.balance_amount || 1300,
+                balancePaid: dbRow.payment_status === 'fully_paid',
+                currentStage: stageId,
+                createdAt: dbRow.created_at,
+                updatedAt: dbRow.updated_at,
+                ecRecords: [],
+                parentDocs: [],
+                currentDoc: {
+                  id: 'curr_1',
+                  pattaNumber: '',
+                  pattaType: 'Individual',
+                  pattaHolder: dbRow.client_name,
+                  fmbVerified: false,
+                  tslrVerified: false,
+                  revenueStatus: 'Clear',
+                  notes: '',
+                },
+                legalOpinion: {
+                  marketableTitle: 'Pending Verification',
+                  encumbranceStatus: 'Nil Encumbrance',
+                  revenueCompliance: 'Full Patta Available',
+                  keyFindings: [],
+                  recommendations: [],
+                  advocateSignoff: false,
+                },
+                uploadedFiles: [],
+              };
+            });
+          });
+        }
+      })
+      .catch(err => console.log('Dashboard fetch notice:', err));
+  }, []);
 
   const totalAdvanceCollected = cases
     .filter(c => c.advancePaid)

@@ -34,12 +34,70 @@ export default function ClientTrackPage({ params }: { params: Promise<{ caseId: 
   const [activeTab, setActiveTab] = useState<'timeline' | 'documents' | 'preview'>('timeline');
 
   useEffect(() => {
-    // Search by ID (case-insensitive) or by phone number
-    const found = INITIAL_CASES.find(
-      c => c.id.toUpperCase() === rawId.toUpperCase() || c.clientPhone === rawId
-    );
-    setCaseData(found || null);
-    setLoading(false);
+    // 1. Fetch from live SQL database
+    fetch(`/api/cases/${rawId}`)
+      .then(res => res.json())
+      .then(result => {
+        if (result.success && result.data) {
+          const dbData = result.data;
+          const stageIndex = (dbData.current_stage || 1) - 1;
+          const stageId = PROCESS_STAGES[stageIndex]?.id || '1_ENQUIRY';
+
+          setCaseData({
+            id: dbData.id,
+            clientName: dbData.client_name,
+            clientPhone: dbData.client_phone,
+            clientEmail: dbData.client_email,
+            serviceRequired: dbData.service_package,
+            district: dbData.district,
+            surveyNumber: dbData.survey_number || '',
+            totalAgreedCost: dbData.total_fee || 6500,
+            advanceAmount: dbData.advance_amount || 5200,
+            advancePaid: dbData.payment_status === 'advance_paid' || dbData.payment_status === 'fully_paid',
+            balanceAmount: dbData.balance_amount || 1300,
+            balancePaid: dbData.payment_status === 'fully_paid',
+            currentStage: stageId,
+            createdAt: dbData.created_at,
+            updatedAt: dbData.updated_at,
+            ecRecords: dbData.ecRecords || [],
+            parentDocs: dbData.parentDocs || [],
+            currentDoc: dbData.revenueRecord || {
+              id: 'curr_1',
+              pattaNumber: '',
+              pattaType: 'Individual',
+              pattaHolder: dbData.client_name,
+              fmbVerified: false,
+              tslrVerified: false,
+              revenueStatus: 'Clear',
+              notes: '',
+            },
+            legalOpinion: dbData.legalOpinion || {
+              marketableTitle: 'Pending Verification',
+              encumbranceStatus: 'Nil Encumbrance',
+              revenueCompliance: 'Full Patta Available',
+              keyFindings: [],
+              recommendations: [],
+              advocateSignoff: false,
+            },
+            uploadedFiles: [],
+          });
+          setLoading(false);
+        } else {
+          // Fallback to local data
+          const found = INITIAL_CASES.find(
+            c => c.id.toUpperCase() === rawId.toUpperCase() || c.clientPhone === rawId
+          );
+          setCaseData(found || null);
+          setLoading(false);
+        }
+      })
+      .catch(() => {
+        const found = INITIAL_CASES.find(
+          c => c.id.toUpperCase() === rawId.toUpperCase() || c.clientPhone === rawId
+        );
+        setCaseData(found || null);
+        setLoading(false);
+      });
   }, [rawId]);
 
   if (loading) {

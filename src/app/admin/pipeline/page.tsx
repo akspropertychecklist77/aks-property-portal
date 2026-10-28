@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { 
   Kanban, 
@@ -60,6 +60,72 @@ export default function AdminPipelinePage() {
   const [searchQuery, setSearchQuery] = useState('');
   const [viewMode, setViewMode] = useState<'stepper_table' | 'three_phase' | 'classic_board'>('stepper_table');
 
+  // Load latest cases from Database on mount
+  useEffect(() => {
+    fetch('/api/cases')
+      .then(res => res.json())
+      .then(result => {
+        if (result.success && Array.isArray(result.data) && result.data.length > 0) {
+          // Map DB rows to ClientCase model
+          setCases(prev => {
+            return result.data.map((dbRow: any) => {
+              const existing = prev.find(p => p.id === dbRow.id);
+              const stageIndex = (dbRow.current_stage || 1) - 1;
+              const stageId = PROCESS_STAGES[stageIndex]?.id || '1_ENQUIRY';
+
+              if (existing) {
+                return {
+                  ...existing,
+                  currentStage: stageId,
+                  advancePaid: dbRow.payment_status === 'advance_paid' || dbRow.payment_status === 'fully_paid',
+                };
+              }
+
+              return {
+                id: dbRow.id,
+                clientName: dbRow.client_name,
+                clientPhone: dbRow.client_phone,
+                clientEmail: dbRow.client_email,
+                serviceRequired: dbRow.service_package,
+                district: dbRow.district,
+                surveyNumber: dbRow.survey_number || '',
+                totalAgreedCost: dbRow.total_fee || 6500,
+                advanceAmount: dbRow.advance_amount || 5200,
+                advancePaid: dbRow.payment_status === 'advance_paid' || dbRow.payment_status === 'fully_paid',
+                balanceAmount: dbRow.balance_amount || 1300,
+                balancePaid: dbRow.payment_status === 'fully_paid',
+                currentStage: stageId,
+                createdAt: dbRow.created_at,
+                updatedAt: dbRow.updated_at,
+                ecRecords: [],
+                parentDocs: [],
+                currentDoc: {
+                  id: 'curr_1',
+                  pattaNumber: '',
+                  pattaType: 'Individual',
+                  pattaHolder: dbRow.client_name,
+                  fmbVerified: false,
+                  tslrVerified: false,
+                  revenueStatus: 'Clear',
+                  notes: '',
+                },
+                legalOpinion: {
+                  marketableTitle: 'Pending Verification',
+                  encumbranceStatus: 'Nil Encumbrance',
+                  revenueCompliance: 'Full Patta Available',
+                  keyFindings: [],
+                  recommendations: [],
+                  advocateSignoff: false,
+                },
+                uploadedFiles: [],
+              };
+            });
+          });
+        }
+      })
+      .catch(err => console.log('Database fetch notice:', err));
+  }, []);
+
   const moveCaseStage = (caseId: string, direction: 'next' | 'prev') => {
     setCases(prev => prev.map(c => {
       if (c.id !== caseId) return c;
@@ -67,6 +133,19 @@ export default function AdminPipelinePage() {
       let targetIndex = direction === 'next' ? currentIndex + 1 : currentIndex - 1;
       if (targetIndex < 0) targetIndex = 0;
       if (targetIndex >= PROCESS_STAGES.length) targetIndex = PROCESS_STAGES.length - 1;
+      const targetStageNumber = targetIndex + 1;
+
+      // Sync stage update directly into SQL database
+      fetch(`/api/cases/${caseId}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          targetStage: targetStageNumber,
+          notes: `Advanced to Step ${targetStageNumber}: ${PROCESS_STAGES[targetIndex].shortName}`,
+          triggeredBy: 'Advocate Saravanan',
+        }),
+      }).catch(err => console.error('Failed to sync stage update to database:', err));
+
       return {
         ...c,
         currentStage: PROCESS_STAGES[targetIndex].id,

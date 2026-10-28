@@ -13,20 +13,33 @@ export default function LoginPage() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
 
-  const handleLogin = (e: React.FormEvent) => {
+  const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
     setError("");
 
-    // Demonstration login verification
-    setTimeout(() => {
-      if ((username === "advocate.saravanan" || username === "akspropertychecklist77@gmail.com") && password) {
+    try {
+      const res = await fetch("/api/auth/login", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ username, password }),
+      });
+      const data = await res.json();
+      if (data.success) {
+        if (typeof window !== "undefined") {
+          localStorage.setItem("aks_user", JSON.stringify(data.user));
+          localStorage.setItem("aks_session", data.sessionToken);
+        }
         router.push("/admin");
       } else {
-        setError("Invalid username or password credentials. Please verify.");
-        setLoading(false);
+        setError(data.error || "Invalid username or password credentials.");
       }
-    }, 600);
+    } catch (err: any) {
+      console.error("Login request failed:", err);
+      setError("Unable to connect to authentication server. Please retry.");
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
