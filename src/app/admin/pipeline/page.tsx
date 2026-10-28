@@ -54,6 +54,20 @@ const WORKFLOW_PHASES = [
   }
 ];
 
+// Helper to provide human-readable, context-aware workflow actions
+const getNextActionLabel = (stageIndex: number) => {
+  switch (stageIndex) {
+    case 0: return 'Proceed to Call';
+    case 1: return 'Confirm 80% Advance';
+    case 2: return 'Start Job Card & EC';
+    case 3: return 'Send to Advocate';
+    case 4: return 'Assemble Report';
+    case 5: return 'Issue Watermarked Preview';
+    case 6: return 'Mark Paid & Courier';
+    default: return 'Final Dispatched';
+  }
+};
+
 export default function AdminPipelinePage() {
   const [cases, setCases] = useState<ClientCase[]>(INITIAL_CASES);
   const [selectedStageFilter, setSelectedStageFilter] = useState<string>('ALL');
@@ -380,8 +394,10 @@ export default function AdminPipelinePage() {
 
                       <div className="flex items-center justify-between text-[11px] text-slate-400 pt-0.5">
                         <span className="truncate max-w-[280px]">{currentStageObj.clientVisibleTitle}</span>
-                        <span className={c.advancePaid ? 'text-emerald-400 font-bold' : 'text-rose-400 font-bold'}>
-                          {c.advancePaid ? '80% Paid (₹' + (c.totalAgreedCost * 0.8).toLocaleString() + ')' : 'Adv. Pending'}
+                        <span className={c.advancePaid ? 'text-emerald-400 font-bold' : 'text-amber-400/90 font-bold'}>
+                          {c.advancePaid 
+                            ? (c.balancePaid ? '✓ Fully Settled' : '80% Advance Paid') 
+                            : '80% Advance Pending (₹' + (c.totalAgreedCost * 0.8).toLocaleString() + ')'}
                         </span>
                       </div>
                     </div>
@@ -411,9 +427,9 @@ export default function AdminPipelinePage() {
                         disabled={stageIndex === PROCESS_STAGES.length - 1}
                         onClick={() => moveCaseStage(c.id, 'next')}
                         className="px-3.5 py-2 rounded-xl bg-amber-500 hover:bg-amber-400 text-slate-950 text-xs font-extrabold shadow-md shadow-amber-500/20 disabled:opacity-20 transition flex items-center gap-1.5"
-                        title="Advance to next step"
+                        title={`Move case to next stage: ${PROCESS_STAGES[stageIndex + 1]?.title || 'Done'}`}
                       >
-                        <span>Advance Step</span>
+                        <span>{getNextActionLabel(stageIndex)}</span>
                         <ArrowRight className="w-3.5 h-3.5" />
                       </button>
                     </div>
@@ -478,8 +494,8 @@ export default function AdminPipelinePage() {
                           </div>
 
                           <div className="pt-2 border-t border-slate-700/60 flex items-center justify-between text-[11px]">
-                            <span className={c.advancePaid ? 'text-emerald-400 font-bold' : 'text-rose-400 font-bold'}>
-                              {c.advancePaid ? '80% Paid' : 'Adv. Pending'}
+                            <span className={c.advancePaid ? 'text-emerald-400 font-bold' : 'text-amber-400/90 font-bold'}>
+                              {c.advancePaid ? '80% Paid' : '80% Adv. Pending'}
                             </span>
                             <span className="text-slate-400 font-semibold">
                               ₹{c.totalAgreedCost.toLocaleString()}
