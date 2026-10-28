@@ -24,12 +24,121 @@ export default function JobCardPage({ params }: { params: Promise<{ id: string }
   const caseId = decodeURIComponent(unwrappedParams.id);
 
   const [currentCase, setCurrentCase] = useState<ClientCase | null>(null);
+  const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState<'ec' | 'parent' | 'current' | 'opinion'>('ec');
 
   useEffect(() => {
-    const found = INITIAL_CASES.find(c => c.id.toUpperCase() === caseId.toUpperCase());
-    setCurrentCase(found || null);
+    // 1. Fetch case from SQL database
+    fetch(`/api/cases/${caseId}`)
+      .then(res => res.json())
+      .then(result => {
+        if (result.success && result.data) {
+          const dbData = result.data;
+          const stageIndex = (dbData.current_stage || 1) - 1;
+          const stageId = PROCESS_STAGES[stageIndex]?.id || '1_ENQUIRY';
+
+          // If db has no mock deeds yet, populate default template
+          const defaultEc: ECRecord[] = [
+            {
+              id: 'ec-1',
+              period: '1994 - 2005 (11 Years)',
+              sro: `${dbData.district} SRO`,
+              surveyNumber: dbData.survey_number || 'S.F. 101',
+              docNumber: '1120/1994',
+              parties: 'Original Ancestral Partition',
+              natureOfDeed: 'Partition Deed',
+              verified: true,
+            },
+            {
+              id: 'ec-2',
+              period: '2005 - 2018 (13 Years)',
+              sro: `${dbData.district} SRO`,
+              surveyNumber: dbData.survey_number || 'S.F. 101',
+              docNumber: '4521/2005',
+              parties: 'K. Ramasamy to Vendor',
+              natureOfDeed: 'Sale Deed',
+              verified: true,
+            },
+          ];
+
+          setCurrentCase({
+            id: dbData.id,
+            clientName: dbData.client_name,
+            clientPhone: dbData.client_phone,
+            clientEmail: dbData.client_email,
+            serviceRequired: dbData.service_package,
+            district: dbData.district,
+            surveyNumber: dbData.survey_number || '',
+            totalAgreedCost: dbData.total_fee || 6500,
+            advanceAmount: dbData.advance_amount || 5200,
+            advancePaid: dbData.payment_status === 'advance_paid' || dbData.payment_status === 'fully_paid',
+            balanceAmount: dbData.balance_amount || 1300,
+            balancePaid: dbData.payment_status === 'fully_paid',
+            currentStage: stageId,
+            createdAt: dbData.created_at,
+            updatedAt: dbData.updated_at,
+            ecRecords: dbData.ecRecords && dbData.ecRecords.length > 0 ? dbData.ecRecords : defaultEc,
+            parentDocs: dbData.parentDocs && dbData.parentDocs.length > 0 ? dbData.parentDocs : [
+              {
+                id: 'pd-1',
+                docNumber: 'Doc 1120/1994',
+                year: '1994',
+                deedType: 'Registered Partition Deed',
+                executants: 'Original Joint Family',
+                claimants: 'Vendor Predecessor',
+                extent: '2,400 Sq.Ft',
+                scheduleMatches: true,
+                notes: 'Root title intact without gaps.',
+              }
+            ],
+            currentDoc: dbData.revenueRecord || {
+              id: 'curr_1',
+              pattaNumber: 'Patta No. 2481',
+              pattaType: 'Individual',
+              pattaHolder: dbData.client_name,
+              fmbVerified: true,
+              tslrVerified: true,
+              revenueStatus: 'Clear',
+              notes: 'Current revenue records match registered title deeds.',
+            },
+            legalOpinion: dbData.legalOpinion || {
+              marketableTitle: 'Clear',
+              encumbranceStatus: 'Nil Encumbrance',
+              revenueCompliance: 'Full Patta Available',
+              keyFindings: [
+                'Chain of title verified unbroken for over 30 years.',
+                'Patta transferred cleanly in the name of the vendor.',
+                'No adverse court orders, attachments, or bank hypothecations flagged.',
+              ],
+              recommendations: [
+                'Inspect original parent deeds at registration.',
+                'Verify latest property tax paid receipt before sale consideration transfer.',
+              ],
+              advocateSignoff: false,
+              advocateName: 'Advocate A.K. Saravanan (M.E. Energy, LLB)',
+            },
+            uploadedFiles: [],
+          });
+        } else {
+          const found = INITIAL_CASES.find(c => c.id.toUpperCase() === caseId.toUpperCase());
+          setCurrentCase(found || null);
+        }
+      })
+      .catch(() => {
+        const found = INITIAL_CASES.find(c => c.id.toUpperCase() === caseId.toUpperCase());
+        setCurrentCase(found || null);
+      })
+      .finally(() => setLoading(false));
   }, [caseId]);
+
+  if (loading) {
+    return (
+      <div className="p-16 text-center text-slate-400 flex flex-col items-center justify-center gap-3">
+        <div className="w-6 h-6 border-2 border-amber-500 border-t-transparent rounded-full animate-spin" />
+        <span className="text-xs font-semibold">Opening Job Card from SQL database...</span>
+      </div>
+    );
+  }
 
   if (!currentCase) {
     return (
