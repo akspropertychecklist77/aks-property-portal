@@ -2,10 +2,8 @@ name = "aks-property-portal"
 compatibility_date = "2024-09-23"
 compatibility_flags = ["nodejs_compat"]
 
-# Cloudflare D1 Database Binding
-# Connects edge queries to the serverless SQLite database
 [[d1_databases]]
 binding = "DB"
 database_name = "aks-portal-db"
-database_id = "YOUR_D1_DATABASE_ID" # Will be replaced by your Cloudflare D1 database ID
+database_id = "c987d1f0-a579-4e4c-8482-36482bebfd7f"
 migrations_dir = "database"

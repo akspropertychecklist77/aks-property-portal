@@ -128,28 +128,32 @@ async function run() {
   }
   const fullSql = fs.readFileSync(schemaPath, 'utf8');
 
-  // Split SQL into executable statements
-  const statements = fullSql
+  // Strip comment lines first, then split on semicolon
+  const cleanSql = fullSql
+    .split('\n')
+    .filter(line => !line.trim().startsWith('--'))
+    .join('\n');
+
+  const statements = cleanSql
     .split(';')
     .map(s => s.trim())
-    .filter(s => s.length > 0 && !s.startsWith('--'));
+    .filter(s => s.length > 0);
 
   console.log(`Executing ${statements.length} SQL statements into Cloudflare D1...`);
 
-  // Execute in batches to prevent payload limits
   let executedCount = 0;
-  for (let i = 0; i < statements.length; i += 10) {
-    const batch = statements.slice(i, i + 10).join(';\n') + ';';
+  for (let i = 0; i < statements.length; i++) {
+    const stmt = statements[i] + ';';
     const queryRes = await fetch(`${API_BASE}/accounts/${accountId}/d1/database/${dbUuid}/query`, {
       method: 'POST',
       headers,
-      body: JSON.stringify({ sql: batch }),
+      body: JSON.stringify({ sql: stmt }),
     });
     const queryData = await queryRes.json();
     if (!queryData.success) {
-      console.warn(`⚠️ Warning on batch ${Math.floor(i / 10) + 1}:`, queryData.errors?.[0]?.message || 'Query issue, continuing...');
+      console.warn(`⚠️ Warning on statement ${i + 1}:`, queryData.errors?.[0]?.message || 'Query issue, continuing...');
     }
-    executedCount += Math.min(10, statements.length - i);
+    executedCount++;
     process.stdout.write(`Progress: ${executedCount}/${statements.length} statements executed\r`);
   }
   console.log(`\n✅ Schema migrated successfully into Cloudflare D1!`);
@@ -219,3 +223,4 @@ run().catch(err => {
   console.error('\n❌ Unexpected Error:', err);
   process.exit(1);
 });
+
