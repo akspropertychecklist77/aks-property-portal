@@ -78,6 +78,7 @@ export interface LegalOpinionSummary {
 
 export interface ClientCase {
   id: string; // e.g. "AK-2026-001"
+  sourceEnquiryId?: string;
   clientName: string;
   clientPhone: string;
   clientEmail?: string;
@@ -115,4 +116,26 @@ export interface ClientCase {
     fileSize: string;
   }[];
 }
+
+export type EnquiryStatus = 'new' | 'contacted' | 'accepted' | 'rejected' | 'spam';
+
+export interface ClientEnquiry {
+  id: string; // e.g. "ENQ-2026-101"
+  clientName: string;
+  clientPhone: string;
+  clientEmail?: string;
+  servicePackage: string;
+  district: string;
+  propertyAddress?: string;
+  surveyNumber?: string;
+  clientNotes?: string;
+  source: 'website' | 'property_checklist_app' | 'whatsapp' | string;
+  status: EnquiryStatus;
+  assignedHandlerId?: string;
+  convertedCaseId?: string;
+  rejectionReason?: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
 
