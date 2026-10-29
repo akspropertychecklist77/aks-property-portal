@@ -11,3 +11,4 @@ ALTER TABLE revenue_records ADD COLUMN fmb_file_name VARCHAR(255);
 
 -- 2. Add mime_type to case_documents
 ALTER TABLE case_documents ADD COLUMN mime_type VARCHAR(100);
+

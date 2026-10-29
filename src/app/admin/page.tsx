@@ -111,7 +111,7 @@ export default function AdminDashboardPage() {
             href="/admin/pipeline"
             className="px-4 py-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-white font-bold text-xs border border-slate-700 transition-all flex items-center gap-2"
           >
-            <span>Open Kanban Board</span>
+            <span>View Case Pipeline</span>
             <ArrowRight className="w-3.5 h-3.5" />
           </Link>
           <Link

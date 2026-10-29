@@ -26,7 +26,7 @@ export default function AdminLayout({
   const navItems = [
     { label: 'Overview', href: '/admin', icon: FolderKanban },
     { label: 'Incoming Enquiries', href: '/admin/enquiries', icon: Inbox },
-    { label: '8-Stage Kanban', href: '/admin/pipeline', icon: Kanban },
+    { label: 'Case Pipeline', href: '/admin/pipeline', icon: Kanban },
     { label: 'New Client Intake', href: '/admin/new-case', icon: PlusCircle },
   ];
 
