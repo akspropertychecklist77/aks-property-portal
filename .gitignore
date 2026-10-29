@@ -44,4 +44,9 @@ database/*.db-wal
 .open-next/
 .wrangler/
 
+# local user uploaded documents
+public/uploads/*
+!public/uploads/.gitkeep
+
+
 
