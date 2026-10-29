@@ -54,12 +54,17 @@ export interface CurrentDocument {
   pattaNumber: string;
   pattaType: 'Individual' | 'Joint' | 'Town Survey';
   pattaHolder: string;
+  chittaVerified?: boolean;
   fmbVerified: boolean;
   tslrVerified: boolean;
   revenueStatus: 'Clear' | 'Mismatch' | 'Under Revenue Query';
   notes: string;
   pattaFileUrl?: string;
+  pattaFileName?: string;
+  chittaFileUrl?: string;
+  chittaFileName?: string;
   fmbFileUrl?: string;
+  fmbFileName?: string;
   sourceType?: 'MANUAL_UPLOAD' | 'ESERVICES_TN_AUTO_FETCH';
   subDivision?: string;
   villageTaluk?: string;
@@ -111,9 +116,10 @@ export interface ClientCase {
   uploadedFiles: {
     id: string;
     fileName: string;
-    category: 'Deed' | 'Patta' | 'EC' | 'ID Proof' | 'Other';
+    category: 'Deed' | 'Patta' | 'Chitta' | 'FMB' | 'EC' | 'ID Proof' | 'Other';
     uploadedAt: string;
     fileSize: string;
+    mimeType?: string;
   }[];
 }
 

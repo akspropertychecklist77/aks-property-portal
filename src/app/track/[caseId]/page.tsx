@@ -368,7 +368,7 @@ export default function ClientTrackPage({ params }: { params: Promise<{ caseId: 
                 <div className="border-2 border-dashed border-slate-700 rounded-xl p-8 text-center hover:border-amber-500/50 transition-colors bg-slate-950/40 cursor-pointer">
                   <Upload className="w-8 h-8 text-amber-400 mx-auto mb-2" />
                   <p className="text-xs font-bold text-white">Click or drag &amp; drop files to upload</p>
-                  <p className="text-[10px] text-slate-400 mt-1">PDF, JPG, PNG up to 25MB (Encrypted &amp; Confidential)</p>
+                  <p className="text-[10px] text-slate-400 mt-1">PDF, Word (.docx / .doc), JPG, PNG up to 25MB (Encrypted &amp; Confidential)</p>
                 </div>
               </div>
             </div>

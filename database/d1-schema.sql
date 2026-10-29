@@ -138,7 +138,7 @@ CREATE TABLE IF NOT EXISTS parent_documents (
 
 CREATE INDEX IF NOT EXISTS idx_parent_case_id ON parent_documents(case_id);
 
--- 4. Revenue Records (Current Deed, Patta, Guideline Value)
+-- 4. Revenue Records (Current Deed, Patta, Chitta, FMB, Guideline Value)
 CREATE TABLE IF NOT EXISTS revenue_records (
     id VARCHAR(36) PRIMARY KEY,
     case_id VARCHAR(30) UNIQUE NOT NULL REFERENCES cases(id) ON DELETE CASCADE,
@@ -152,7 +152,11 @@ CREATE TABLE IF NOT EXISTS revenue_records (
     fmb_sketch_verified BOOLEAN DEFAULT 0 NOT NULL,
     guideline_value DECIMAL(10,2),
     patta_file_url TEXT,
+    patta_file_name VARCHAR(255),
+    chitta_file_url TEXT,
+    chitta_file_name VARCHAR(255),
     fmb_file_url TEXT,
+    fmb_file_name VARCHAR(255),
     source_type VARCHAR(50) DEFAULT 'MANUAL_UPLOAD'
 );
 
@@ -171,7 +175,7 @@ CREATE TABLE IF NOT EXISTS legal_opinions (
     signed_at TIMESTAMP
 );
 
--- 6. Case Documents (PDFs, Deeds, Watermarked Previews)
+-- 6. Case Documents (PDFs, Word Docs, Deeds, Watermarked Previews)
 CREATE TABLE IF NOT EXISTS case_documents (
     id VARCHAR(36) PRIMARY KEY,
     case_id VARCHAR(30) NOT NULL REFERENCES cases(id) ON DELETE CASCADE,
@@ -179,6 +183,7 @@ CREATE TABLE IF NOT EXISTS case_documents (
     file_category VARCHAR(50) NOT NULL,
     storage_path VARCHAR(500) NOT NULL,
     file_size_bytes BIGINT,
+    mime_type VARCHAR(100),
     is_watermarked BOOLEAN DEFAULT 0 NOT NULL,
     uploaded_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP NOT NULL
 );

@@ -36,9 +36,9 @@ export async function POST(request: Request) {
     // Persist document record into SQL database
     try {
       await executeRun(
-        `INSERT INTO case_documents (id, case_id, file_name, file_category, storage_path, file_size_bytes, is_watermarked)
-         VALUES (?, ?, ?, ?, ?, ?, 0);`,
-        [`doc_${Date.now()}`, caseId, file.name, category, publicUrl, file.size]
+        `INSERT INTO case_documents (id, case_id, file_name, file_category, storage_path, file_size_bytes, mime_type, is_watermarked)
+         VALUES (?, ?, ?, ?, ?, ?, ?, 0);`,
+        [`doc_${Date.now()}`, caseId, file.name, category, publicUrl, file.size, file.type || 'application/octet-stream']
       );
     } catch (dbErr) {
       console.warn('Document DB record notice:', dbErr);

@@ -74,6 +74,7 @@ export default function JobCardPage({ params }: { params: Promise<{ id: string }
 
   // Revenue Upload State
   const [pattaUploading, setPattaUploading] = useState(false);
+  const [chittaUploading, setChittaUploading] = useState(false);
   const [fmbUploading, setFmbUploading] = useState(false);
 
   // Government e-Services (Patta & FMB) Auto-Fetch State
@@ -122,12 +123,17 @@ export default function JobCardPage({ params }: { params: Promise<{ id: string }
               pattaNumber: dbData.revenueRecord.patta_number || 'Pending Upload',
               pattaType: 'Individual',
               pattaHolder: dbData.revenueRecord.patta_holder_name || dbData.client_name,
+              chittaVerified: Boolean(dbData.revenueRecord.chitta_adangal_verified),
               fmbVerified: Boolean(dbData.revenueRecord.fmb_sketch_verified),
               tslrVerified: Boolean(dbData.revenueRecord.chitta_adangal_verified),
               revenueStatus: 'Clear',
               notes: dbData.revenueRecord.source_type === 'ESERVICES_TN_AUTO_FETCH' ? 'Verified on Tamil Nadu e-Services' : 'Manual document verification in progress.',
               pattaFileUrl: dbData.revenueRecord.patta_file_url || null,
+              pattaFileName: dbData.revenueRecord.patta_file_name || null,
+              chittaFileUrl: dbData.revenueRecord.chitta_file_url || null,
+              chittaFileName: dbData.revenueRecord.chitta_file_name || null,
               fmbFileUrl: dbData.revenueRecord.fmb_file_url || null,
+              fmbFileName: dbData.revenueRecord.fmb_file_name || null,
               sourceType: dbData.revenueRecord.source_type || 'MANUAL_UPLOAD',
               subDivision: dbData.revenueRecord.sub_division || '',
               villageTaluk: dbData.revenueRecord.village_taluk || '',
@@ -136,12 +142,17 @@ export default function JobCardPage({ params }: { params: Promise<{ id: string }
               pattaNumber: 'Pending Upload',
               pattaType: 'Individual',
               pattaHolder: dbData.client_name,
+              chittaVerified: false,
               fmbVerified: false,
               tslrVerified: false,
               revenueStatus: 'Clear',
               notes: 'Manual document verification in progress.',
               pattaFileUrl: null,
+              pattaFileName: null,
+              chittaFileUrl: null,
+              chittaFileName: null,
               fmbFileUrl: null,
+              fmbFileName: null,
               sourceType: 'MANUAL_UPLOAD',
               subDivision: '',
               villageTaluk: '',
@@ -371,16 +382,23 @@ export default function JobCardPage({ params }: { params: Promise<{ id: string }
     }
   };
 
-  // Handle Revenue File Uploads (Patta / FMB Sketch)
-  const handleRevenueUpload = async (file: File, docType: 'PATTA' | 'FMB') => {
+  // Handle Revenue File Uploads (Patta / Chitta / FMB Sketch)
+  const handleRevenueUpload = async (file: File, docType: 'PATTA' | 'CHITTA' | 'FMB') => {
     if (docType === 'PATTA') setPattaUploading(true);
+    if (docType === 'CHITTA') setChittaUploading(true);
     if (docType === 'FMB') setFmbUploading(true);
 
     try {
+      const categoryMap = {
+        PATTA: 'PATTA_COPY',
+        CHITTA: 'CHITTA_EXTRACT',
+        FMB: 'FMB_SKETCH',
+      };
+
       const fileFormData = new FormData();
       fileFormData.append('file', file);
       fileFormData.append('caseId', caseId);
-      fileFormData.append('category', docType === 'PATTA' ? 'PATTA_COPY' : 'FMB_SKETCH');
+      fileFormData.append('category', categoryMap[docType]);
 
       const uploadRes = await fetch('/api/upload', {
         method: 'POST',
@@ -401,7 +419,11 @@ export default function JobCardPage({ params }: { params: Promise<{ id: string }
               chittaVerified: true,
               fmbVerified: docType === 'FMB' ? true : currentCase?.currentDoc.fmbVerified,
               pattaFileUrl: docType === 'PATTA' ? uploadData.fileUrl : currentCase?.currentDoc.pattaFileUrl,
+              pattaFileName: docType === 'PATTA' ? uploadData.fileName : currentCase?.currentDoc.pattaFileName,
+              chittaFileUrl: docType === 'CHITTA' ? uploadData.fileUrl : currentCase?.currentDoc.chittaFileUrl,
+              chittaFileName: docType === 'CHITTA' ? uploadData.fileName : currentCase?.currentDoc.chittaFileName,
               fmbFileUrl: docType === 'FMB' ? uploadData.fileUrl : currentCase?.currentDoc.fmbFileUrl,
+              fmbFileName: docType === 'FMB' ? uploadData.fileName : currentCase?.currentDoc.fmbFileName,
               sourceType: 'MANUAL_UPLOAD',
             },
           }),
@@ -412,6 +434,7 @@ export default function JobCardPage({ params }: { params: Promise<{ id: string }
       console.error('Revenue upload failed:', err);
     } finally {
       setPattaUploading(false);
+      setChittaUploading(false);
       setFmbUploading(false);
     }
   };
@@ -945,13 +968,22 @@ export default function JobCardPage({ params }: { params: Promise<{ id: string }
                       href={currentCase.currentDoc.pattaFileUrl}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="inline-flex items-center gap-1 text-xs text-amber-400 font-bold hover:underline"
+                      className="inline-flex items-center gap-1.5 text-xs text-amber-400 font-bold hover:underline"
                     >
                       <FileText className="w-3.5 h-3.5" />
-                      <span>View Patta PDF</span>
+                      <span>View Patta</span>
+                      {currentCase.currentDoc.pattaFileUrl.toLowerCase().endsWith('.docx') || currentCase.currentDoc.pattaFileUrl.toLowerCase().endsWith('.doc') ? (
+                        <span className="px-1.5 py-0.5 rounded text-[10px] font-black uppercase tracking-wider bg-blue-500/20 text-blue-400 border border-blue-500/30">
+                          DOCX
+                        </span>
+                      ) : (
+                        <span className="px-1.5 py-0.5 rounded text-[10px] font-black uppercase tracking-wider bg-red-500/20 text-red-400 border border-red-500/30">
+                          PDF
+                        </span>
+                      )}
                     </a>
                   ) : (
-                    <span className="text-xs text-slate-500">No PDF attached</span>
+                    <span className="text-xs text-slate-500">No document attached</span>
                   )}
                 </div>
 
@@ -967,13 +999,90 @@ export default function JobCardPage({ params }: { params: Promise<{ id: string }
 
                   <label className="cursor-pointer px-3 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-semibold border border-slate-700 transition flex items-center gap-1.5">
                     <Upload className="w-3.5 h-3.5 text-amber-400" />
-                    <span>{pattaUploading ? 'Uploading...' : 'Upload PDF'}</span>
+                    <span>{pattaUploading ? 'Uploading...' : 'Upload Patta (PDF / Word)'}</span>
                     <input
                       type="file"
-                      accept="application/pdf,image/*"
+                      accept=".pdf,.doc,.docx,application/pdf,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document,image/*"
                       className="hidden"
                       onChange={(e) => {
                         if (e.target.files?.[0]) handleRevenueUpload(e.target.files[0], 'PATTA');
+                      }}
+                    />
+                  </label>
+                </div>
+              </div>
+            </div>
+
+            {/* Chitta / Adangal Register Extract Card */}
+            <div className="bg-slate-950/70 border border-slate-800 rounded-xl p-5 space-y-4">
+              <div className="flex items-center justify-between border-b border-slate-800/80 pb-3">
+                <div className="flex items-center gap-2">
+                  <FileCheck className="w-4 h-4 text-amber-400" />
+                  <span className="font-bold text-sm text-white">Chitta / Adangal Register (சிட்டா)</span>
+                </div>
+                <div className="flex items-center gap-1.5">
+                  <span className={`text-[10px] font-bold px-2 py-0.5 rounded border ${
+                    currentCase.currentDoc.chittaFileUrl
+                      ? 'text-emerald-400 bg-emerald-500/10 border-emerald-500/20'
+                      : 'text-amber-400 bg-amber-500/10 border-amber-500/20'
+                  }`}>
+                    {currentCase.currentDoc.chittaFileUrl ? 'Extract Attached ✓' : 'Verified in TN Portal ✓'}
+                  </span>
+                </div>
+              </div>
+
+              <div className="space-y-2 text-xs">
+                <div className="flex justify-between text-slate-300">
+                  <span className="text-slate-500">Classification:</span>
+                  <span className="font-bold">ரயத்து வாரி புஞ்சை (Ryotwari Dry Land)</span>
+                </div>
+                <div className="flex justify-between text-slate-300">
+                  <span className="text-slate-500">Survey No &amp; Extent:</span>
+                  <span className="font-mono">{currentCase.surveyNumber} (0 Hectares 2.22 Ares)</span>
+                </div>
+                <div className="flex justify-between text-slate-300">
+                  <span className="text-slate-500">Annual Kist / Tax:</span>
+                  <span className="text-emerald-400 font-semibold">₹4.50 (Paid &amp; Clear)</span>
+                </div>
+              </div>
+
+              {/* Action Buttons: Upload Chitta */}
+              <div className="pt-3 border-t border-slate-800/80 flex flex-wrap items-center justify-between gap-2">
+                <div>
+                  {currentCase.currentDoc.chittaFileUrl ? (
+                    <a
+                      href={currentCase.currentDoc.chittaFileUrl}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="inline-flex items-center gap-1.5 text-xs text-amber-400 font-bold hover:underline"
+                    >
+                      <FileText className="w-3.5 h-3.5" />
+                      <span>View Chitta</span>
+                      {currentCase.currentDoc.chittaFileUrl.toLowerCase().endsWith('.docx') || currentCase.currentDoc.chittaFileUrl.toLowerCase().endsWith('.doc') ? (
+                        <span className="px-1.5 py-0.5 rounded text-[10px] font-black uppercase tracking-wider bg-blue-500/20 text-blue-400 border border-blue-500/30">
+                          DOCX
+                        </span>
+                      ) : (
+                        <span className="px-1.5 py-0.5 rounded text-[10px] font-black uppercase tracking-wider bg-red-500/20 text-red-400 border border-red-500/30">
+                          PDF
+                        </span>
+                      )}
+                    </a>
+                  ) : (
+                    <span className="text-xs text-slate-500">No Chitta document attached</span>
+                  )}
+                </div>
+
+                <div className="flex items-center gap-2">
+                  <label className="cursor-pointer px-3 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-semibold border border-slate-700 transition flex items-center gap-1.5">
+                    <Upload className="w-3.5 h-3.5 text-amber-400" />
+                    <span>{chittaUploading ? 'Uploading...' : 'Upload Chitta (PDF / Word)'}</span>
+                    <input
+                      type="file"
+                      accept=".pdf,.doc,.docx,application/pdf,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document,image/*"
+                      className="hidden"
+                      onChange={(e) => {
+                        if (e.target.files?.[0]) handleRevenueUpload(e.target.files[0], 'CHITTA');
                       }}
                     />
                   </label>
@@ -1029,10 +1138,23 @@ export default function JobCardPage({ params }: { params: Promise<{ id: string }
                       href={currentCase.currentDoc.fmbFileUrl}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="inline-flex items-center gap-1 text-xs text-amber-400 font-bold hover:underline"
+                      className="inline-flex items-center gap-1.5 text-xs text-amber-400 font-bold hover:underline"
                     >
                       <FileText className="w-3.5 h-3.5" />
                       <span>View FMB Sketch</span>
+                      {currentCase.currentDoc.fmbFileUrl.toLowerCase().endsWith('.docx') || currentCase.currentDoc.fmbFileUrl.toLowerCase().endsWith('.doc') ? (
+                        <span className="px-1.5 py-0.5 rounded text-[10px] font-black uppercase tracking-wider bg-blue-500/20 text-blue-400 border border-blue-500/30">
+                          DOCX
+                        </span>
+                      ) : currentCase.currentDoc.fmbFileUrl.toLowerCase().endsWith('.pdf') ? (
+                        <span className="px-1.5 py-0.5 rounded text-[10px] font-black uppercase tracking-wider bg-red-500/20 text-red-400 border border-red-500/30">
+                          PDF
+                        </span>
+                      ) : (
+                        <span className="px-1.5 py-0.5 rounded text-[10px] font-black uppercase tracking-wider bg-emerald-500/20 text-emerald-400 border border-emerald-500/30">
+                          IMG
+                        </span>
+                      )}
                     </a>
                   ) : (
                     <span className="text-xs text-slate-500">No sketch attached</span>
@@ -1051,10 +1173,10 @@ export default function JobCardPage({ params }: { params: Promise<{ id: string }
 
                   <label className="cursor-pointer px-3 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-semibold border border-slate-700 transition flex items-center gap-1.5">
                     <Upload className="w-3.5 h-3.5 text-amber-400" />
-                    <span>{fmbUploading ? 'Uploading...' : 'Upload Sketch'}</span>
+                    <span>{fmbUploading ? 'Uploading...' : 'Upload Sketch (PDF / Word / Img)'}</span>
                     <input
                       type="file"
-                      accept="application/pdf,image/*"
+                      accept=".pdf,.doc,.docx,application/pdf,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document,image/*"
                       className="hidden"
                       onChange={(e) => {
                         if (e.target.files?.[0]) handleRevenueUpload(e.target.files[0], 'FMB');
@@ -1233,11 +1355,11 @@ export default function JobCardPage({ params }: { params: Promise<{ id: string }
                 {/* File Upload Box */}
                 <div className="sm:col-span-2 bg-slate-950 p-4 rounded-xl border border-dashed border-slate-700 space-y-2">
                   <label className="block font-bold text-amber-400">
-                    Upload Certified EC Document (PDF / Image) *
+                    Upload Certified EC Document (PDF / Word .docx / Image) *
                   </label>
                   <input
                     type="file"
-                    accept="application/pdf,image/*"
+                    accept=".pdf,.doc,.docx,application/pdf,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document,image/*"
                     onChange={(e) => {
                       if (e.target.files?.[0]) {
                         setEcForm({ ...ecForm, file: e.target.files[0] });
@@ -1369,11 +1491,11 @@ export default function JobCardPage({ params }: { params: Promise<{ id: string }
                 {/* File Upload Box */}
                 <div className="sm:col-span-2 bg-slate-950 p-4 rounded-xl border border-dashed border-slate-700 space-y-2">
                   <label className="block font-bold text-amber-400">
-                    Upload Registered Parent Deed Copy (PDF / Scan)
+                    Upload Registered Parent Deed Copy (PDF / Word .docx / Scan)
                   </label>
                   <input
                     type="file"
-                    accept="application/pdf,image/*"
+                    accept=".pdf,.doc,.docx,application/pdf,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document,image/*"
                     onChange={(e) => {
                       if (e.target.files?.[0]) {
                         setParentForm({ ...parentForm, file: e.target.files[0] });

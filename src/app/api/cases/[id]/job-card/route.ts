@@ -102,8 +102,9 @@ export async function PUT(
         `INSERT INTO revenue_records (
           id, case_id, patta_number, patta_holder_name, field_survey_no,
           sub_division, village_taluk, chitta_adangal_verified, fmb_sketch_verified,
-          patta_file_url, fmb_file_url, source_type
-        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+          patta_file_url, patta_file_name, chitta_file_url, chitta_file_name,
+          fmb_file_url, fmb_file_name, source_type
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
         ON CONFLICT(case_id) DO UPDATE SET
           patta_number = CASE WHEN excluded.patta_number != '' THEN excluded.patta_number ELSE revenue_records.patta_number END,
           patta_holder_name = CASE WHEN excluded.patta_holder_name != '' THEN excluded.patta_holder_name ELSE revenue_records.patta_holder_name END,
@@ -113,7 +114,11 @@ export async function PUT(
           chitta_adangal_verified = CASE WHEN excluded.chitta_adangal_verified = 1 THEN 1 ELSE revenue_records.chitta_adangal_verified END,
           fmb_sketch_verified = CASE WHEN excluded.fmb_sketch_verified = 1 THEN 1 ELSE revenue_records.fmb_sketch_verified END,
           patta_file_url = COALESCE(excluded.patta_file_url, revenue_records.patta_file_url),
+          patta_file_name = COALESCE(excluded.patta_file_name, revenue_records.patta_file_name),
+          chitta_file_url = COALESCE(excluded.chitta_file_url, revenue_records.chitta_file_url),
+          chitta_file_name = COALESCE(excluded.chitta_file_name, revenue_records.chitta_file_name),
           fmb_file_url = COALESCE(excluded.fmb_file_url, revenue_records.fmb_file_url),
+          fmb_file_name = COALESCE(excluded.fmb_file_name, revenue_records.fmb_file_name),
           source_type = excluded.source_type;`,
         [
           `rev_${Date.now()}`,
@@ -126,14 +131,18 @@ export async function PUT(
           data.chittaVerified ? 1 : 0,
           data.fmbVerified ? 1 : 0,
           data.pattaFileUrl || null,
+          data.pattaFileName || null,
+          data.chittaFileUrl || null,
+          data.chittaFileName || null,
           data.fmbFileUrl || null,
+          data.fmbFileName || null,
           data.sourceType || 'MANUAL_UPLOAD',
         ]
       );
 
       return NextResponse.json({
         success: true,
-        message: 'Revenue & Patta records updated in database',
+        message: 'Revenue records (Patta, Chitta, FMB) updated in database',
       });
     }
 
