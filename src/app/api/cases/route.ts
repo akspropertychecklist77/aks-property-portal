@@ -1,17 +1,30 @@
 import { NextResponse } from 'next/server';
 import { executeQuery, executeRun } from '@/lib/db';
 
+const corsHeaders = {
+  'Access-Control-Allow-Origin': '*',
+  'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
+  'Access-Control-Allow-Headers': 'Content-Type, Authorization',
+};
+
+export async function OPTIONS() {
+  return new NextResponse(null, { status: 204, headers: corsHeaders });
+}
+
 export async function GET(request: Request) {
   try {
     const cases = await executeQuery(
       `SELECT * FROM cases ORDER BY created_at DESC;`
     );
-    return NextResponse.json({ success: true, count: cases.length, data: cases });
+    return NextResponse.json(
+      { success: true, count: cases.length, data: cases },
+      { headers: corsHeaders }
+    );
   } catch (error: any) {
     console.error('Database Error in GET /api/cases:', error);
     return NextResponse.json(
       { success: false, error: error.message },
-      { status: 500 }
+      { status: 500, headers: corsHeaders }
     );
   }
 }
@@ -61,20 +74,23 @@ export async function POST(request: Request) {
     // Record Stage 1 audit log
     await executeRun(
       `INSERT INTO case_milestone_logs (id, case_id, from_stage, to_stage, action_notes, triggered_by)
-       VALUES (?, ?, NULL, 1, 'Initial client intake created', 'admin');`,
+       VALUES (?, ?, NULL, 1, 'Initial client intake created from Website', 'website');`,
       [`log_${Date.now()}`, caseId]
     );
 
-    return NextResponse.json({
-      success: true,
-      message: 'Case successfully created in database',
-      caseId,
-    });
+    return NextResponse.json(
+      {
+        success: true,
+        message: 'Case successfully created in database',
+        caseId,
+      },
+      { headers: corsHeaders }
+    );
   } catch (error: any) {
     console.error('Database Error in POST /api/cases:', error);
     return NextResponse.json(
       { success: false, error: error.message },
-      { status: 500 }
+      { status: 500, headers: corsHeaders }
     );
   }
 }
