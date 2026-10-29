@@ -7,8 +7,8 @@ import { ShieldCheck, Lock, User, Eye, EyeOff, ArrowRight, Scale, AlertCircle } 
 
 export default function LoginPage() {
   const router = useRouter();
-  const [username, setUsername] = useState("advocate.saravanan");
-  const [password, setPassword] = useState("Advocate@2026!");
+  const [username, setUsername] = useState("");
+  const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
@@ -84,7 +84,7 @@ export default function LoginPage() {
                   required
                   value={username}
                   onChange={(e) => setUsername(e.target.value)}
-                  placeholder="advocate.saravanan"
+                  placeholder="Enter username or email"
                   className="block w-full pl-10 pr-3 py-2.5 bg-slate-950 border border-slate-700 rounded-xl text-sm text-white placeholder-slate-500 focus:outline-none focus:border-amber-500 focus:ring-1 focus:ring-amber-500"
                 />
               </div>
@@ -103,7 +103,7 @@ export default function LoginPage() {
                   required
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
-                  placeholder="••••••••••••"
+                  placeholder="Enter your password"
                   className="block w-full pl-10 pr-10 py-2.5 bg-slate-950 border border-slate-700 rounded-xl text-sm text-white placeholder-slate-500 focus:outline-none focus:border-amber-500 focus:ring-1 focus:ring-amber-500"
                 />
                 <button
@@ -141,19 +141,6 @@ export default function LoginPage() {
               </button>
             </div>
           </form>
-
-          {/* Quick Demo Login Credentials Card */}
-          <div className="mt-6 pt-5 border-t border-slate-800 text-xs text-slate-400 space-y-2">
-            <div className="flex items-center gap-1.5 text-amber-400 font-medium">
-              <ShieldCheck className="w-3.5 h-3.5" />
-              <span>Demonstration Logins:</span>
-            </div>
-            <div className="bg-slate-950 p-2.5 rounded-lg border border-slate-800/80 font-mono text-[11px] space-y-1">
-              <div><span className="text-slate-500">Advocate:</span> advocate.saravanan</div>
-              <div><span className="text-slate-500">Staff:</span> research.ops</div>
-              <div><span className="text-slate-500">Password:</span> Advocate@2026!</div>
-            </div>
-          </div>
         </div>
 
         <div className="mt-6 text-center text-xs text-slate-500">
