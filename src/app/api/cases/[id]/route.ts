@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { executeQuery, executeQueryOne, executeRun } from '@/lib/db';
+import { recordChainedAuditLog } from '@/lib/security/auditSigner';
 
 export async function GET(
   request: Request,
@@ -46,9 +47,15 @@ export async function GET(
       [caseItem.id]
     );
 
-    // Query audit logs
+    // Query milestone logs
     const milestoneLogs = await executeQuery(
       `SELECT * FROM case_milestone_logs WHERE case_id = ? ORDER BY logged_at DESC;`,
+      [caseItem.id]
+    );
+
+    // Query cryptographically chained audit logs (Merkle Chain)
+    const auditLogs = await executeQuery(
+      `SELECT * FROM case_audit_logs WHERE case_id = ? ORDER BY timestamp DESC;`,
       [caseItem.id]
     );
 
@@ -61,6 +68,7 @@ export async function GET(
         revenueRecord,
         legalOpinion,
         milestoneLogs,
+        auditLogs,
       },
     });
   } catch (error: any) {
@@ -103,7 +111,7 @@ export async function PATCH(
       [toStage, cleanId]
     );
 
-    // Record audit log entry
+    // Record milestone audit log entry
     await executeRun(
       `INSERT INTO case_milestone_logs (id, case_id, from_stage, to_stage, action_notes, triggered_by)
        VALUES (?, ?, ?, ?, ?, ?);`,
@@ -116,6 +124,15 @@ export async function PATCH(
         triggeredBy || 'advocate',
       ]
     );
+
+    // Record tamper-proof chained audit log entry (Merkle Chain)
+    await recordChainedAuditLog({
+      caseId: cleanId,
+      action: `WORKFLOW_STAGE_TRANSITION`,
+      previousState: `Stage ${fromStage}`,
+      newState: `Stage ${toStage}`,
+      performedBy: triggeredBy || 'Advocate A.K. Saravanan',
+    });
 
     return NextResponse.json({
       success: true,

@@ -18,18 +18,18 @@ export default function PortalHomePage() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-slate-900 via-slate-900 to-slate-800 text-white flex flex-col">
+    <div className="min-h-screen bg-slate-50 dark:bg-gradient-to-b dark:from-slate-900 dark:via-slate-900 dark:to-slate-800 text-slate-900 dark:text-white flex flex-col">
       {/* Header */}
-      <header className="border-b border-slate-800/80 bg-slate-900/60 backdrop-blur sticky top-0 z-50">
+      <header className="border-b border-slate-200/90 dark:border-slate-800/80 bg-white/80 dark:bg-slate-900/60 backdrop-blur sticky top-0 z-50">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-20 flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <div className="w-11 h-11 rounded-xl bg-gradient-to-tr from-amber-500 to-amber-300 flex items-center justify-center text-slate-950 font-black shadow-lg shadow-amber-500/20">
+            <div className="w-11 h-11 rounded-xl bg-blue-600 dark:bg-gradient-to-tr dark:from-amber-500 dark:to-amber-300 flex items-center justify-center text-white dark:text-slate-950 font-black shadow-xs">
               <Scale className="w-6 h-6" />
             </div>
             <div>
               <div className="font-extrabold text-lg tracking-tight text-white flex items-center gap-2">
                 AKS PROPERTY CHECKLIST
-                <span className="text-[10px] bg-amber-500/20 text-amber-300 font-bold px-2 py-0.5 rounded-full border border-amber-500/30 uppercase tracking-widest">
+                <span className="text-[10px] bg-blue-50 text-blue-700 font-bold px-2 py-0.5 rounded-full border border-blue-200 dark:bg-amber-500/20 dark:text-amber-300 dark:border-amber-500/30 uppercase tracking-widest">
                   Legal Portal
                 </span>
               </div>
@@ -40,13 +40,13 @@ export default function PortalHomePage() {
           <div className="flex items-center gap-4">
             <a 
               href="https://akspropertychecklist.in" 
-              className="text-xs text-slate-400 hover:text-white transition-colors hidden sm:inline"
+              className="text-xs text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white transition-colors hidden sm:inline"
             >
               ← Back to Main Website
             </a>
             <Link
               href="/login"
-              className="px-4 py-2 text-xs font-bold rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 hover:border-slate-600 transition-all flex items-center gap-1.5 shadow-sm"
+              className="px-4 py-2 text-xs font-bold rounded-lg bg-white hover:bg-slate-50 text-slate-700 dark:bg-slate-800 dark:hover:bg-slate-700 dark:text-slate-200 border border-slate-200 dark:border-slate-700 transition-all flex items-center gap-1.5 shadow-xs"
             >
               <Lock className="w-3.5 h-3.5 text-amber-400" />
               <span>Advocate &amp; Staff Login</span>
@@ -57,23 +57,23 @@ export default function PortalHomePage() {
 
       {/* Hero & Track Search */}
       <main className="flex-1 max-w-5xl mx-auto px-4 py-16 sm:py-24 flex flex-col justify-center text-center">
-        <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-amber-500/10 border border-amber-500/30 text-amber-300 text-xs font-bold mx-auto mb-6">
+        <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-blue-50 border border-blue-200 text-blue-700 dark:bg-amber-500/10 dark:border-amber-500/30 dark:text-amber-300 text-xs font-bold mx-auto mb-6">
           <ShieldCheck className="w-4 h-4" />
           <span>Real-Time Case Tracking &amp; Legal Verification Platform</span>
         </div>
 
         <h1 className="text-4xl sm:text-6xl font-black tracking-tight text-white max-w-3xl mx-auto leading-tight">
-          Track Your Property <span className="text-transparent bg-clip-text bg-gradient-to-r from-amber-400 to-amber-200">Legal Due Diligence</span> Live
+          Track Your Property <span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-700 to-indigo-600 dark:from-amber-400 dark:to-amber-200">Legal Due Diligence</span> Live
         </h1>
         <p className="mt-6 text-base sm:text-lg text-slate-300 max-w-2xl mx-auto leading-relaxed">
           Transparent 8-stage verification tracking for Land Title Scrutiny, 30+ Year Sub-Registrar EC Indexing, and Revenue Patta Clearance.
         </p>
 
         {/* Tracking Card */}
-        <div className="mt-10 max-w-xl mx-auto w-full bg-slate-800/90 border border-slate-700/80 rounded-2xl p-4 sm:p-6 shadow-2xl backdrop-blur-xl">
+        <div className="mt-10 max-w-xl mx-auto w-full bg-white dark:bg-slate-800/90 border border-slate-200/90 dark:border-slate-700/80 rounded-2xl p-4 sm:p-6 shadow-xs backdrop-blur-xl">
           <form onSubmit={handleTrack} className="space-y-4">
             <div className="text-left">
-              <label htmlFor="case-search" className="block text-xs font-bold uppercase tracking-wider text-slate-300 mb-2">
+              <label htmlFor="case-search" className="block text-xs font-bold uppercase tracking-wider text-slate-700 dark:text-slate-300 mb-2">
                 Enter Case ID or Registered Mobile Number
               </label>
               <div className="relative">
@@ -83,7 +83,7 @@ export default function PortalHomePage() {
                   value={caseQuery}
                   onChange={(e) => setCaseQuery(e.target.value)}
                   placeholder="e.g. AK-2026-001 or 9842212345"
-                  className="w-full pl-11 pr-4 py-4 rounded-xl bg-slate-900 border border-slate-700 text-white placeholder-slate-500 text-base font-semibold focus:outline-none focus:ring-2 focus:ring-amber-500 focus:border-transparent transition-all"
+                  className="w-full pl-11 pr-4 py-4 rounded-xl bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-white placeholder-slate-400 text-base font-semibold focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
                   required
                 />
                 <Search className="w-5 h-5 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
@@ -92,7 +92,7 @@ export default function PortalHomePage() {
 
             <button
               type="submit"
-              className="w-full py-4 rounded-xl bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-600 hover:to-amber-700 text-slate-950 font-black text-base shadow-lg shadow-amber-500/25 transition-all flex items-center justify-center gap-2 cursor-pointer"
+              className="w-full py-4 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-bold text-base shadow-xs transition-all flex items-center justify-center gap-2 cursor-pointer"
             >
               <span>Track My Case Live</span>
               <ArrowRight className="w-5 h-5" />

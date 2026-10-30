@@ -45,9 +45,36 @@ export async function POST(request: Request) {
       advance_amount,
     } = body;
 
+    // Field-Level Validation with Human-Clear Error Messages
+    const fieldErrors: Record<string, string> = {};
+
+    if (!client_name || typeof client_name !== 'string' || client_name.trim().length < 2) {
+      fieldErrors.client_name = 'Client full name is required (minimum 2 characters).';
+    }
+
+    const cleanPhone = (client_phone || '').replace(/[^0-9]/g, '');
+    if (!cleanPhone || cleanPhone.length < 10) {
+      fieldErrors.client_phone = 'A valid 10-digit mobile number is required.';
+    }
+
+    if (!district || typeof district !== 'string' || district.trim().length === 0) {
+      fieldErrors.district = 'District is required.';
+    }
+
+    if (Object.keys(fieldErrors).length > 0) {
+      return NextResponse.json(
+        {
+          success: false,
+          error: Object.values(fieldErrors)[0],
+          fieldErrors,
+        },
+        { status: 400, headers: corsHeaders }
+      );
+    }
+
     const caseId = id || `AK-${new Date().getFullYear()}-${Math.floor(100 + Math.random() * 900)}`;
-    const fee = total_fee || 6500;
-    const advance = advance_amount || Math.round(fee * 0.8);
+    const fee = total_fee ? Number(total_fee) : 6500;
+    const advance = advance_amount ? Number(advance_amount) : Math.round(fee * 0.8);
     const balance = fee - advance;
 
     await executeRun(
@@ -58,13 +85,13 @@ export async function POST(request: Request) {
       ) VALUES (?, ?, ?, ?, ?, 1, ?, ?, ?, ?, ?, ?, 'advance_pending', 'active');`,
       [
         caseId,
-        client_name,
-        client_phone,
-        client_email || null,
+        client_name.trim(),
+        client_phone.trim(),
+        client_email ? client_email.trim() : null,
         service_package || 'Legal Opinion (Standard)',
-        district || 'Coimbatore',
-        property_address || '',
-        survey_number || '',
+        district.trim(),
+        property_address ? property_address.trim() : '',
+        survey_number ? survey_number.trim() : '',
         fee,
         advance,
         balance,
@@ -74,7 +101,7 @@ export async function POST(request: Request) {
     // Record Stage 1 audit log
     await executeRun(
       `INSERT INTO case_milestone_logs (id, case_id, from_stage, to_stage, action_notes, triggered_by)
-       VALUES (?, ?, NULL, 1, 'Initial client intake created from Website', 'website');`,
+       VALUES (?, ?, NULL, 1, 'Initial client intake created from Legal Desk', 'advocate_admin');`,
       [`log_${Date.now()}`, caseId]
     );
 
@@ -89,7 +116,7 @@ export async function POST(request: Request) {
   } catch (error: any) {
     console.error('Database Error in POST /api/cases:', error);
     return NextResponse.json(
-      { success: false, error: error.message },
+      { success: false, error: error.message || 'An unexpected database error occurred.' },
       { status: 500, headers: corsHeaders }
     );
   }

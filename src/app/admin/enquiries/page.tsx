@@ -19,7 +19,8 @@ import {
   AlertCircle,
   ExternalLink,
   RefreshCw,
-  Search
+  Search,
+  Sparkles
 } from 'lucide-react';
 import { ClientEnquiry, EnquiryStatus } from '@/lib/types';
 
@@ -30,6 +31,17 @@ export default function EnquiriesInboxPage() {
   const [searchTerm, setSearchTerm] = useState('');
   const [acceptingId, setAcceptingId] = useState<string | null>(null);
   const [actionSuccess, setActionSuccess] = useState<string | null>(null);
+  const [actionError, setActionError] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (actionSuccess || actionError) {
+      const timer = setTimeout(() => {
+        setActionSuccess(null);
+        setActionError(null);
+      }, 5000);
+      return () => clearTimeout(timer);
+    }
+  }, [actionSuccess, actionError]);
 
   const fetchEnquiries = async () => {
     setLoading(true);
@@ -57,6 +69,7 @@ export default function EnquiriesInboxPage() {
 
     setAcceptingId(enquiry.id);
     setActionSuccess(null);
+    setActionError(null);
 
     try {
       const res = await fetch(`/api/enquiries/${enquiry.id}/accept`, {
@@ -69,8 +82,7 @@ export default function EnquiriesInboxPage() {
 
       const data = await res.json();
       if (data.success) {
-        setActionSuccess(`Enquiry successfully promoted! Case ${data.caseId} created.`);
-        // Update local list
+        setActionSuccess(`✓ Enquiry successfully promoted to official Case ${data.caseId}!`);
         setEnquiries(prev =>
           prev.map(item =>
             item.id === enquiry.id
@@ -79,16 +91,17 @@ export default function EnquiriesInboxPage() {
           )
         );
       } else {
-        alert(`Failed to accept: ${data.error}`);
+        setActionError(`Failed to promote enquiry: ${data.error || 'Server rejected request.'}`);
       }
     } catch (err: any) {
-      alert(`Error promoting enquiry: ${err.message}`);
+      setActionError(`Error promoting enquiry: ${err.message || 'Network exception.'}`);
     } finally {
       setAcceptingId(null);
     }
   };
 
   const handleUpdateStatus = async (id: string, newStatus: EnquiryStatus) => {
+    setActionError(null);
     try {
       const res = await fetch(`/api/enquiries/${id}`, {
         method: 'PATCH',
@@ -97,14 +110,15 @@ export default function EnquiriesInboxPage() {
       });
       const data = await res.json();
       if (data.success) {
+        setActionSuccess(`✓ Enquiry status updated to "${newStatus}".`);
         setEnquiries(prev =>
           prev.map(item => (item.id === id ? { ...item, status: newStatus } : item))
         );
       } else {
-        alert(data.error);
+        setActionError(`Status update failed: ${data.error || 'Server error.'}`);
       }
     } catch (err: any) {
-      alert(`Status update failed: ${err.message}`);
+      setActionError(`Status update failed: ${err.message || 'Network exception.'}`);
     }
   };
 
@@ -128,101 +142,93 @@ export default function EnquiriesInboxPage() {
   return (
     <div className="space-y-6 max-w-7xl mx-auto">
       {/* Header Banner */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-slate-200 dark:border-slate-800 pb-4">
         <div>
-          <div className="flex items-center gap-2">
-            <h1 className="text-2xl sm:text-3xl font-black text-white">Client Intake &amp; Enquiries</h1>
+          <div className="flex items-center gap-2.5">
+            <h1 className="text-xl sm:text-2xl font-bold text-slate-900 dark:text-white tracking-tight">
+              Inbound Leads &amp; Enquiries Triage Desk
+            </h1>
             {countNew > 0 && (
-              <span className="px-2.5 py-0.5 rounded-full bg-amber-500/20 text-amber-400 font-extrabold text-xs border border-amber-500/30">
+              <span className="px-2 py-0.5 rounded-full bg-blue-50 text-blue-700 dark:bg-blue-950 dark:text-blue-300 font-mono font-bold text-xs border border-blue-200 dark:border-blue-800 animate-pulse">
                 {countNew} New
               </span>
             )}
           </div>
-          <p className="text-xs text-slate-400 mt-1">
-            Tier 1 Intake Staging: Review prospective leads from the website &amp; property checklist. Qualified leads are converted into official cases.
+          <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
+            Two-Tier Buffer Isolation: Public leads staged in isolated Cloudflare D1 storage before advocate promotion to active cases
           </p>
         </div>
 
         <button
           onClick={fetchEnquiries}
-          disabled={loading}
-          className="px-3.5 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 font-bold text-xs border border-slate-700 transition-all flex items-center gap-2 self-start sm:self-auto"
+          className="px-3.5 py-2 rounded-lg bg-white dark:bg-slate-900 hover:bg-slate-50 dark:hover:bg-slate-800 border border-slate-200 dark:border-slate-800 text-slate-700 dark:text-slate-300 font-medium text-xs transition flex items-center gap-1.5 self-start sm:self-auto shadow-2xs"
         >
-          <RefreshCw className={`w-3.5 h-3.5 ${loading ? 'animate-spin' : ''}`} />
-          <span>Refresh</span>
+          <RefreshCw className={`w-3.5 h-3.5 text-slate-400 ${loading ? 'animate-spin' : ''}`} />
+          <span>Refresh Staging</span>
         </button>
       </div>
 
-      {/* Metrics Funnel */}
-      <div className="grid grid-cols-2 lg:grid-cols-5 gap-3">
-        <div className="p-4 rounded-xl bg-slate-900 border border-slate-800">
-          <span className="text-[10px] font-bold uppercase text-slate-400 block">Total Inquiries</span>
-          <span className="text-xl font-black text-white mt-1 block">{enquiries.length}</span>
-          <span className="text-[10px] text-slate-500 mt-1 block">All incoming leads</span>
-        </div>
-
-        <div className="p-4 rounded-xl bg-slate-900 border border-amber-500/30 bg-amber-950/10">
-          <span className="text-[10px] font-bold uppercase text-amber-400 block">Pending Review</span>
-          <span className="text-xl font-black text-amber-400 mt-1 block">{countNew}</span>
-          <span className="text-[10px] text-slate-400 mt-1 block">Requires staff triage</span>
-        </div>
-
-        <div className="p-4 rounded-xl bg-slate-900 border border-blue-500/30 bg-blue-950/10">
-          <span className="text-[10px] font-bold uppercase text-blue-400 block">In Discussion</span>
-          <span className="text-xl font-black text-blue-400 mt-1 block">{countContacted}</span>
-          <span className="text-[10px] text-slate-400 mt-1 block">Client contacted</span>
-        </div>
-
-        <div className="p-4 rounded-xl bg-slate-900 border border-emerald-500/30 bg-emerald-950/10">
-          <span className="text-[10px] font-bold uppercase text-emerald-400 block">Promoted Cases</span>
-          <span className="text-xl font-black text-emerald-400 mt-1 block">{countAccepted}</span>
-          <span className="text-[10px] text-slate-400 mt-1 block">Active in legal ops</span>
-        </div>
-
-        <div className="p-4 rounded-xl bg-slate-900 border border-slate-800 col-span-2 lg:col-span-1">
-          <span className="text-[10px] font-bold uppercase text-slate-400 block">Conversion Rate</span>
-          <span className="text-xl font-black text-white mt-1 block">{conversionRate}%</span>
-          <span className="text-[10px] text-emerald-400 mt-1 block">Lead-to-case ratio</span>
-        </div>
-      </div>
-
+      {/* Action Notices */}
       {actionSuccess && (
-        <div className="p-3.5 rounded-xl bg-emerald-950/40 border border-emerald-500/40 text-emerald-400 text-xs flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <CheckCircle2 className="w-4 h-4 flex-shrink-0" />
-            <span>{actionSuccess}</span>
-          </div>
-          <Link
-            href="/admin/pipeline"
-            className="font-bold underline text-emerald-300 hover:text-white"
-          >
-            View in Kanban &rarr;
-          </Link>
+        <div className="p-3.5 rounded-xl bg-emerald-50 border border-emerald-200 text-emerald-800 text-xs flex items-center gap-2 shadow-2xs">
+          <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
+          <span className="font-semibold">{actionSuccess}</span>
         </div>
       )}
 
-      {/* Filter Tabs & Search Bar */}
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-3 bg-slate-900/60 p-3 rounded-2xl border border-slate-800">
-        <div className="flex items-center overflow-x-auto gap-1">
+      {actionError && (
+        <div className="p-3.5 rounded-xl bg-rose-50 border border-rose-200 text-rose-800 text-xs flex items-center gap-2 shadow-2xs">
+          <AlertCircle className="w-4 h-4 text-rose-600 shrink-0" />
+          <span className="font-semibold">{actionError}</span>
+        </div>
+      )}
+
+      {/* KPI Triage Ribbon */}
+      <div className="grid grid-cols-2 sm:grid-cols-5 gap-3">
+        <div className="p-3.5 rounded-xl bg-white dark:bg-slate-900 border border-slate-200/90 dark:border-slate-800 shadow-xs">
+          <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400 block">Total Inbound</span>
+          <span className="text-xl font-bold font-mono text-slate-900 dark:text-white mt-1 block">{enquiries.length}</span>
+        </div>
+        <div className="p-3.5 rounded-xl bg-white dark:bg-slate-900 border border-slate-200/90 dark:border-slate-800 shadow-xs">
+          <span className="text-[10px] font-bold uppercase tracking-wider text-blue-600 block">New (Uncontacted)</span>
+          <span className="text-xl font-bold font-mono text-blue-600 mt-1 block">{countNew}</span>
+        </div>
+        <div className="p-3.5 rounded-xl bg-white dark:bg-slate-900 border border-slate-200/90 dark:border-slate-800 shadow-xs">
+          <span className="text-[10px] font-bold uppercase tracking-wider text-slate-600 dark:text-slate-300 block">Contacted</span>
+          <span className="text-xl font-bold font-mono text-slate-700 dark:text-slate-200 mt-1 block">{countContacted}</span>
+        </div>
+        <div className="p-3.5 rounded-xl bg-white dark:bg-slate-900 border border-slate-200/90 dark:border-slate-800 shadow-xs">
+          <span className="text-[10px] font-bold uppercase tracking-wider text-emerald-600 block">Promoted to Case</span>
+          <span className="text-xl font-bold font-mono text-emerald-600 mt-1 block">{countAccepted}</span>
+        </div>
+        <div className="p-3.5 rounded-xl bg-white dark:bg-slate-900 border border-slate-200/90 dark:border-slate-800 shadow-xs col-span-2 sm:col-span-1">
+          <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400 block">Conversion Rate</span>
+          <span className="text-xl font-bold font-mono text-slate-800 dark:text-slate-200 mt-1 block">{conversionRate}%</span>
+        </div>
+      </div>
+
+      {/* Filter Tabs & Search Controls */}
+      <div className="bg-white dark:bg-slate-900 border border-slate-200/90 dark:border-slate-800 rounded-xl p-3 flex flex-col sm:flex-row items-center justify-between gap-3 shadow-xs">
+        <div className="flex items-center gap-1.5 overflow-x-auto w-full sm:w-auto">
           {[
-            { id: 'all', label: 'All', count: enquiries.length },
-            { id: 'new', label: 'New Leads', count: countNew },
+            { id: 'all', label: 'All Leads', count: enquiries.length },
+            { id: 'new', label: 'New', count: countNew },
             { id: 'contacted', label: 'Contacted', count: countContacted },
-            { id: 'accepted', label: 'Promoted to Cases', count: countAccepted },
-            { id: 'rejected', label: 'Spam / Closed', count: countRejected },
+            { id: 'accepted', label: 'Promoted', count: countAccepted },
+            { id: 'rejected', label: 'Closed / Rejected', count: countRejected },
           ].map(tab => (
             <button
               key={tab.id}
               onClick={() => setActiveTab(tab.id as any)}
-              className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all whitespace-nowrap flex items-center gap-1.5 ${
+              className={`px-3 py-1.5 rounded-lg text-xs font-semibold whitespace-nowrap transition-colors flex items-center gap-1.5 ${
                 activeTab === tab.id
-                  ? 'bg-amber-500 text-slate-950 shadow-sm'
-                  : 'text-slate-400 hover:text-white hover:bg-slate-800'
+                  ? 'bg-blue-600 text-white shadow-xs'
+                  : 'text-slate-600 dark:text-slate-300 hover:text-slate-900 hover:bg-slate-100 dark:hover:bg-slate-800/60'
               }`}
             >
               <span>{tab.label}</span>
-              <span className={`text-[10px] px-1.5 py-0.2 rounded-full ${
-                activeTab === tab.id ? 'bg-slate-950 text-amber-400' : 'bg-slate-800 text-slate-400'
+              <span className={`text-[10px] font-mono px-1.5 py-0.2 rounded-full ${
+                activeTab === tab.id ? 'bg-blue-700 text-white' : 'bg-slate-100 dark:bg-slate-800 text-slate-500'
               }`}>
                 {tab.count}
               </span>
@@ -230,36 +236,43 @@ export default function EnquiriesInboxPage() {
           ))}
         </div>
 
-        <div className="relative w-full md:w-64">
-          <Search className="w-3.5 h-3.5 text-slate-500 absolute left-3 top-1/2 -translate-y-1/2" />
+        <div className="relative w-full sm:w-72">
+          <Search className="w-3.5 h-3.5 text-slate-400 absolute left-3 top-2.5" />
           <input
             type="text"
-            placeholder="Search by name, phone, survey..."
+            placeholder="Search leads, phone, district... (⌘K)"
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
-            className="w-full pl-9 pr-3 py-1.5 bg-slate-950 border border-slate-700 rounded-lg text-xs text-white placeholder-slate-500 focus:outline-none focus:border-amber-500"
+            className="w-full pl-9 pr-8 py-1.5 rounded-lg bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 text-xs text-slate-900 dark:text-white placeholder-slate-400 focus:outline-none focus:border-blue-500 transition-colors"
           />
+          {searchTerm && (
+            <button
+              onClick={() => setSearchTerm('')}
+              className="absolute right-2.5 top-2 text-xs text-slate-400 hover:text-slate-700"
+            >
+              ✕
+            </button>
+          )}
         </div>
       </div>
 
-      {/* Enquiries List */}
+      {/* Leads List */}
       {loading ? (
-        <div className="p-12 text-center text-slate-500 text-sm">
-          Loading incoming enquiries...
+        <div className="py-16 text-center text-slate-400">
+          <RefreshCw className="w-6 h-6 animate-spin mx-auto text-blue-600 mb-2" />
+          <p className="text-xs">Loading inbound leads from Cloudflare D1...</p>
         </div>
       ) : filteredEnquiries.length === 0 ? (
-        <div className="p-12 text-center rounded-2xl bg-slate-900 border border-slate-800">
-          <Inbox className="w-10 h-10 text-slate-600 mx-auto mb-3" />
-          <p className="text-sm font-bold text-slate-300">No enquiries found</p>
-          <p className="text-xs text-slate-500 mt-1">
-            {activeTab === 'all'
-              ? 'Prospective clients submitting the website form will appear here.'
-              : `There are currently no enquiries under the "${activeTab}" filter.`}
+        <div className="p-12 rounded-xl bg-white dark:bg-slate-900 border border-slate-200/90 dark:border-slate-800 text-center space-y-2 shadow-xs">
+          <Inbox className="w-8 h-8 text-slate-300 dark:text-slate-600 mx-auto" />
+          <h3 className="text-sm font-bold text-slate-800 dark:text-slate-200">No leads in this view</h3>
+          <p className="text-xs text-slate-500 max-w-sm mx-auto">
+            {searchTerm ? `No leads match "${searchTerm}".` : 'No enquiries currently waiting in this status.'}
           </p>
         </div>
       ) : (
-        <div className="grid grid-cols-1 gap-4">
-          {filteredEnquiries.map((enquiry) => {
+        <div className="space-y-3">
+          {filteredEnquiries.map(enquiry => {
             const isNew = enquiry.status === 'new';
             const isContacted = enquiry.status === 'contacted';
             const isAccepted = enquiry.status === 'accepted';
@@ -268,45 +281,45 @@ export default function EnquiriesInboxPage() {
             return (
               <div
                 key={enquiry.id}
-                className={`p-5 rounded-2xl bg-slate-900 border transition-all ${
+                className={`p-4 rounded-xl bg-white dark:bg-slate-900 border transition-all shadow-xs ${
                   isNew
-                    ? 'border-amber-500/50 shadow-md shadow-amber-500/5'
+                    ? 'border-blue-300 dark:border-blue-800/80'
                     : isAccepted
-                    ? 'border-emerald-500/30'
-                    : 'border-slate-800'
+                    ? 'border-emerald-300 dark:border-emerald-800/60'
+                    : 'border-slate-200/90 dark:border-slate-800 hover:border-slate-300'
                 }`}
               >
                 <div className="flex flex-col lg:flex-row lg:items-start justify-between gap-4">
-                  {/* Left Column: Lead Information */}
-                  <div className="space-y-3 flex-1">
+                  {/* Lead Information */}
+                  <div className="space-y-2 flex-1">
                     <div className="flex flex-wrap items-center gap-2">
-                      <span className="font-mono text-xs font-bold text-slate-400 bg-slate-950 px-2.5 py-1 rounded-md border border-slate-800">
+                      <span className="font-mono text-xs font-bold text-slate-600 bg-slate-100 dark:bg-slate-800 dark:text-slate-300 px-2 py-0.5 rounded border border-slate-200 dark:border-slate-700">
                         {enquiry.id}
                       </span>
-                      <span className="text-xs px-2.5 py-0.5 rounded-full font-bold bg-amber-500/10 text-amber-400 border border-amber-500/20">
+                      <span className="text-[11px] px-2 py-0.5 rounded-full font-semibold bg-blue-50 text-blue-700 dark:bg-blue-950 dark:text-blue-300 border border-blue-200 dark:border-blue-800">
                         {enquiry.service_package || 'Legal Opinion'}
                       </span>
                       {isNew && (
-                        <span className="text-[10px] px-2 py-0.5 rounded-full font-extrabold bg-amber-500 text-slate-950 uppercase tracking-wider">
+                        <span className="text-[10px] px-2 py-0.5 rounded-full font-bold bg-amber-100 text-amber-800 dark:bg-amber-950 dark:text-amber-300 uppercase tracking-wider">
                           New Lead
                         </span>
                       )}
                       {isContacted && (
-                        <span className="text-[10px] px-2 py-0.5 rounded-full font-bold bg-blue-500/20 text-blue-400 border border-blue-500/30">
+                        <span className="text-[10px] px-2 py-0.5 rounded-full font-semibold bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-300 border border-slate-200 dark:border-slate-700">
                           Contacted
                         </span>
                       )}
                       {isAccepted && (
-                        <span className="text-[10px] px-2 py-0.5 rounded-full font-bold bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 flex items-center gap-1">
+                        <span className="text-[10px] px-2 py-0.5 rounded-full font-semibold bg-emerald-50 text-emerald-700 dark:bg-emerald-950 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800 flex items-center gap-1">
                           <Check className="w-3 h-3" /> Promoted to Case
                         </span>
                       )}
                       {isRejected && (
-                        <span className="text-[10px] px-2 py-0.5 rounded-full font-bold bg-rose-500/20 text-rose-400 border border-rose-500/30">
+                        <span className="text-[10px] px-2 py-0.5 rounded-full font-semibold bg-rose-50 text-rose-700 dark:bg-rose-950 dark:text-rose-300 border border-rose-200 dark:border-rose-800">
                           Closed / Rejected
                         </span>
                       )}
-                      <span className="text-[11px] text-slate-500 flex items-center gap-1 ml-auto">
+                      <span className="text-[11px] text-slate-400 flex items-center gap-1 ml-auto">
                         <Calendar className="w-3 h-3" />
                         {new Date(enquiry.created_at).toLocaleString('en-IN', {
                           day: 'numeric',
@@ -319,65 +332,65 @@ export default function EnquiriesInboxPage() {
                     </div>
 
                     <div>
-                      <h2 className="text-base font-extrabold text-white flex items-center gap-2">
+                      <h2 className="text-base font-bold text-slate-900 dark:text-white flex items-center gap-2">
                         <span>{enquiry.client_name}</span>
-                        <span className="text-xs text-slate-400 font-normal">
+                        <span className="text-xs text-slate-500 font-normal">
                           ({enquiry.source === 'website' ? 'Website Portal' : enquiry.source})
                         </span>
                       </h2>
-                      <div className="flex flex-wrap items-center gap-4 text-xs text-slate-300 mt-1">
+                      <div className="flex flex-wrap items-center gap-4 text-xs text-slate-600 dark:text-slate-300 mt-1">
                         <a
                           href={`tel:${enquiry.client_phone}`}
-                          className="hover:text-amber-400 font-mono flex items-center gap-1 font-semibold text-amber-300"
+                          className="hover:text-blue-600 font-mono flex items-center gap-1 font-semibold text-blue-600 dark:text-blue-400"
                         >
-                          <PhoneCall className="w-3.5 h-3.5" />
+                          <PhoneCall className="w-3 h-3 text-slate-400" />
                           <span>{enquiry.client_phone}</span>
                         </a>
                         {enquiry.client_email && (
-                          <span className="text-slate-400 font-mono">
+                          <span className="text-slate-500 font-mono">
                             {enquiry.client_email}
                           </span>
                         )}
-                        <span className="flex items-center gap-1 text-slate-400">
-                          <MapPin className="w-3.5 h-3.5 text-amber-500" />
+                        <span className="flex items-center gap-1 text-slate-500">
+                          <MapPin className="w-3 h-3 text-blue-600" />
                           <span>{enquiry.district}</span>
                         </span>
                       </div>
                     </div>
 
                     {/* Property & Survey Details */}
-                    <div className="bg-slate-950/70 p-3 rounded-xl border border-slate-800/80 text-xs space-y-1">
+                    <div className="bg-slate-50 dark:bg-slate-950/70 p-2.5 rounded-lg border border-slate-200/80 dark:border-slate-800/80 text-xs space-y-1">
                       {enquiry.survey_number && (
                         <div>
-                          <span className="text-slate-500 font-medium">Survey / Plot No: </span>
-                          <span className="text-white font-mono font-semibold">{enquiry.survey_number}</span>
+                          <span className="text-slate-500">Survey / Plot No: </span>
+                          <span className="text-slate-900 dark:text-white font-mono font-semibold">{enquiry.survey_number}</span>
                         </div>
                       )}
                       {enquiry.property_address && (
                         <div>
-                          <span className="text-slate-500 font-medium">Property Location: </span>
-                          <span className="text-slate-300">{enquiry.property_address}</span>
+                          <span className="text-slate-500">Property Location: </span>
+                          <span className="text-slate-700 dark:text-slate-300">{enquiry.property_address}</span>
                         </div>
                       )}
                       {enquiry.client_notes && (
-                        <div className="pt-1 border-t border-slate-800/60 mt-1">
-                          <span className="text-slate-500 font-medium">Client Notes: </span>
-                          <span className="text-amber-200/90 italic">"{enquiry.client_notes}"</span>
+                        <div className="pt-1 border-t border-slate-200/60 dark:border-slate-800/60 mt-1">
+                          <span className="text-slate-500">Client Notes: </span>
+                          <span className="text-slate-800 dark:text-slate-200 italic">"{enquiry.client_notes}"</span>
                         </div>
                       )}
                     </div>
                   </div>
 
                   {/* Right Column: Case Promotion & Actions */}
-                  <div className="lg:w-72 flex flex-col justify-between border-t lg:border-t-0 lg:border-l border-slate-800 pt-4 lg:pt-0 lg:pl-5">
+                  <div className="lg:w-72 flex flex-col justify-between border-t lg:border-t-0 lg:border-l border-slate-200 dark:border-slate-800 pt-3 lg:pt-0 lg:pl-4">
                     {isAccepted ? (
-                      <div className="space-y-3">
-                        <div className="p-3 rounded-xl bg-emerald-950/30 border border-emerald-500/30 text-xs">
-                          <span className="text-[10px] uppercase font-bold text-emerald-400 block">Official Case Active</span>
-                          <span className="text-sm font-black text-white font-mono mt-0.5 block">
+                      <div className="space-y-2.5">
+                        <div className="p-3 rounded-lg bg-emerald-50 dark:bg-emerald-950/30 border border-emerald-200 dark:border-emerald-800/60 text-xs">
+                          <span className="text-[10px] uppercase font-bold text-emerald-700 dark:text-emerald-400 block">Official Case Active</span>
+                          <span className="text-sm font-bold text-slate-900 dark:text-white font-mono mt-0.5 block">
                             {enquiry.converted_case_id}
                           </span>
-                          <span className="text-[10px] text-slate-400 mt-1 block">
+                          <span className="text-[10px] text-slate-500 dark:text-slate-400 mt-1 block">
                             Operating under 8-Stage Scrutiny
                           </span>
                         </div>
@@ -385,7 +398,7 @@ export default function EnquiriesInboxPage() {
                         <Link
                           href={`/track/${enquiry.converted_case_id}`}
                           target="_blank"
-                          className="w-full py-2 px-3 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-bold transition-all flex items-center justify-center gap-1.5 border border-slate-700"
+                          className="w-full py-1.5 px-3 rounded-lg bg-slate-50 hover:bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-200 text-xs font-semibold transition-all flex items-center justify-center gap-1.5 border border-slate-200 dark:border-slate-700"
                         >
                           <span>Open Tracking URL</span>
                           <ExternalLink className="w-3 h-3 text-slate-400" />
@@ -393,15 +406,15 @@ export default function EnquiriesInboxPage() {
                       </div>
                     ) : (
                       <div className="space-y-2">
-                        <span className="text-[10px] uppercase font-bold text-slate-500 block">Case Handler Actions</span>
+                        <span className="text-[10px] uppercase font-bold text-slate-400 block">Case Handler Actions</span>
                         
-                        {/* Primary Action: Accept & Move to Cases Table */}
+                        {/* Primary Action: 1-Click Accept & Move to Cases Table */}
                         <button
                           onClick={() => handleAcceptToCase(enquiry)}
                           disabled={acceptingId === enquiry.id}
-                          className="w-full py-2.5 px-3 rounded-xl bg-amber-500 hover:bg-amber-600 text-slate-950 font-black text-xs transition-all flex items-center justify-center gap-2 shadow-md shadow-amber-500/20 disabled:opacity-50"
+                          className="w-full py-2 px-3 rounded-lg bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs transition-all flex items-center justify-center gap-1.5 shadow-xs shadow-blue-500/20 disabled:opacity-50"
                         >
-                          <ShieldCheck className="w-4 h-4" />
+                          <ShieldCheck className="w-3.5 h-3.5" />
                           <span>
                             {acceptingId === enquiry.id ? 'Promoting...' : 'Accept & Convert to Case'}
                           </span>
@@ -411,7 +424,7 @@ export default function EnquiriesInboxPage() {
                           {isNew && (
                             <button
                               onClick={() => handleUpdateStatus(enquiry.id, 'contacted')}
-                              className="py-1.5 px-2 rounded-lg bg-slate-800 hover:bg-slate-700 text-blue-400 text-xs font-bold transition-all flex items-center justify-center gap-1 border border-slate-700"
+                              className="py-1 px-2 rounded-lg bg-slate-50 hover:bg-slate-100 dark:bg-slate-800 text-blue-600 dark:text-blue-400 text-xs font-semibold transition-all flex items-center justify-center gap-1 border border-slate-200 dark:border-slate-700"
                             >
                               <PhoneCall className="w-3 h-3" />
                               <span>Contacted</span>
@@ -420,7 +433,7 @@ export default function EnquiriesInboxPage() {
                           {!isRejected && (
                             <button
                               onClick={() => handleUpdateStatus(enquiry.id, 'rejected')}
-                              className="py-1.5 px-2 rounded-lg bg-slate-800 hover:bg-slate-700 text-rose-400 text-xs font-bold transition-all flex items-center justify-center gap-1 border border-slate-700"
+                              className="py-1 px-2 rounded-lg bg-slate-50 hover:bg-slate-100 dark:bg-slate-800 text-rose-600 dark:text-rose-400 text-xs font-semibold transition-all flex items-center justify-center gap-1 border border-slate-200 dark:border-slate-700"
                             >
                               <XCircle className="w-3 h-3" />
                               <span>Reject / Spam</span>
@@ -439,4 +452,3 @@ export default function EnquiriesInboxPage() {
     </div>
   );
 }
-
