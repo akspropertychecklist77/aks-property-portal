@@ -15,10 +15,11 @@ const modules = [
   { id: 'Module 6', name: 'Cloudflare R2 Document Vault', script: 'test-module6-vault.mjs' },
   { id: 'Module 7', name: '80/20 Escrow Billing & Invoicing', script: 'test-module7-billing.mjs' },
   { id: 'Module 8', name: 'Client Progress Tracker (/track/[id])', script: 'test-module8-tracking.mjs' },
+  { id: 'Module 9', name: 'Enterprise Notification Service (Email, WhatsApp, Staff)', script: 'test-notification-service.mjs' },
 ];
 
 console.log('========================================================================');
-console.log('  AKS PLATFORM MASTER VERIFICATION: ALL 8 CORE MODULES');
+console.log('  AKS PLATFORM MASTER VERIFICATION: ALL 9 CORE MODULES');
 console.log('========================================================================\n');
 
 let totalPassed = 0;

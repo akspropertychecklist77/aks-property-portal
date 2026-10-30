@@ -2,6 +2,7 @@ import { legalOpinionRepository, LegalOpinionRecord, UpsertLegalOpinionInput } f
 import { executeQuery, executeQueryOne } from '@/lib/db';
 import { recordChainedAuditLog } from '@/lib/security/auditSigner';
 import { hasPermission } from '@/lib/api/rbac';
+import { notificationService } from '@/lib/services/notificationService';
 
 export interface LegalOpinionDetails {
   caseId: string;
@@ -183,6 +184,26 @@ export class LegalOpinionService {
       newState: `CERTIFIED_MARKETABLE_TITLE_${isMarketable ? 'CLEAR' : 'DEFECTIVE'}`,
       performedBy: `${advocateName} (${barCouncilRegNo})`,
     });
+
+    // 4. Trigger Notification Outbox Event
+    try {
+      await notificationService.publishEvent({
+        eventName: 'LEGAL_OPINION_READY',
+        sourceModule: 'LEGAL_OPINION',
+        entityType: 'LEGAL_OPINION',
+        entityId: cleanCaseId,
+        caseId: cleanCaseId,
+        docketNumber: cleanCaseId,
+        payload: {
+          advocate_name: advocateName,
+          bar_council_reg_no: barCouncilRegNo,
+          marketable_title: isMarketable ? 'MARKETABLE & CLEAR' : 'RESTRICTED / DEFECTIVE',
+          signed_at: signedAt,
+        },
+      });
+    } catch (notifErr) {
+      console.error('[LegalOpinionService] Failed to dispatch LEGAL_OPINION_READY notification event:', notifErr);
+    }
 
     return {
       caseId: cleanCaseId,

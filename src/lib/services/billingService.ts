@@ -1,6 +1,7 @@
 import { billingRepository, PaymentRecord, CaseBillingSummary, CreatePaymentInput } from '@/lib/repositories/billingRepository';
 import { executeQueryOne } from '@/lib/db';
 import { recordChainedAuditLog } from '@/lib/security/auditSigner';
+import { notificationService } from '@/lib/services/notificationService';
 
 const WEBHOOK_SECRET = process.env.PAYMENT_WEBHOOK_SECRET || process.env.AUTH_SECRET || 'AKS_ESCROW_WEBHOOK_SECRET_2026';
 
@@ -156,6 +157,30 @@ export class BillingService {
 
     const summary = (await billingRepository.getBillingSummary(cleanCaseId))!;
     const invoiceNumber = `INV-2026-${cleanCaseId}`;
+
+    // 6. Trigger Notification Outbox Event (Advance or Balance Payment Confirmation)
+    try {
+      const eventName = isFullSettlement ? 'BALANCE_PAYMENT_RECEIVED' : 'ADVANCE_PAYMENT_RECEIVED';
+      await notificationService.publishEvent({
+        eventName,
+        sourceModule: 'BILLING',
+        entityType: 'PAYMENT',
+        entityId: payment.id,
+        caseId: cleanCaseId,
+        docketNumber: cleanCaseId,
+        payload: {
+          amount: Number(amount).toLocaleString('en-IN'),
+          payment_mode: paymentMode,
+          transaction_ref: transactionRef,
+          invoice_number: invoiceNumber,
+          payment_stage: paymentStage,
+          new_balance: Number(newBalance).toLocaleString('en-IN'),
+          new_status: newStatus,
+        },
+      });
+    } catch (notifErr) {
+      console.error('[BillingService] Failed to dispatch payment notification event:', notifErr);
+    }
 
     return {
       payment,

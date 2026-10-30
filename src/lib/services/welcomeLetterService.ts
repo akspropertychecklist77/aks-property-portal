@@ -2,6 +2,7 @@ import { welcomeLetterRepository, WelcomeLetterRecord, UpsertWelcomeLetterInput 
 import { executeQueryOne } from '@/lib/db';
 import { recordChainedAuditLog } from '@/lib/security/auditSigner';
 import { billingRepository } from '@/lib/repositories/billingRepository';
+import { notificationService } from '@/lib/services/notificationService';
 
 export interface WelcomeLetterDetails {
   caseId: string;
@@ -210,6 +211,27 @@ export class WelcomeLetterService {
       ipAddress,
     });
 
+    // 4. Trigger Notification Outbox Event (Email, WhatsApp, Staff Inbox)
+    try {
+      await notificationService.publishEvent({
+        eventName: 'WELCOME_LETTER_APPROVED',
+        sourceModule: 'WELCOME_LETTER',
+        entityType: 'WELCOME_LETTER',
+        entityId: letter.id,
+        caseId: cleanCaseId,
+        docketNumber: cleanCaseId,
+        payload: {
+          letter_ref_no: letter.letter_ref_no,
+          approved_by: advocateUser,
+          letter_date: letter.letter_date,
+          advance_amount: letter.advance_amount,
+          balance_amount: letter.balance_amount,
+        },
+      });
+    } catch (notifErr) {
+      console.error('[WelcomeLetterService] Failed to dispatch WELCOME_LETTER_APPROVED notification:', notifErr);
+    }
+
     const updated = (await welcomeLetterRepository.findByCaseId(cleanCaseId))!;
     return { approved: true, record: updated };
   }
@@ -248,6 +270,26 @@ export class WelcomeLetterService {
       performedBy: actor,
       ipAddress,
     });
+
+    // Trigger Notification Outbox Event
+    try {
+      await notificationService.publishEvent({
+        eventName: 'WELCOME_LETTER_DISPATCHED',
+        sourceModule: 'WELCOME_LETTER',
+        entityType: 'WELCOME_LETTER',
+        entityId: letter.id,
+        caseId: cleanCaseId,
+        docketNumber: cleanCaseId,
+        payload: {
+          letter_ref_no: letter.letter_ref_no,
+          dispatch_channel: channel,
+          dispatch_ref: dispatchRef,
+          dispatched_by: actor,
+        },
+      });
+    } catch (notifErr) {
+      console.error('[WelcomeLetterService] Failed to dispatch WELCOME_LETTER_DISPATCHED notification:', notifErr);
+    }
 
     const updated = (await welcomeLetterRepository.findByCaseId(cleanCaseId))!;
     const details = await this.getOrCreateLetter(cleanCaseId);

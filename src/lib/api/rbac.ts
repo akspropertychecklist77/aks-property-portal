@@ -17,6 +17,8 @@ const ROLE_PERMISSIONS: Record<string, string[]> = {
   SUPER_ADMIN: [
     'users:manage',
     'meta:configure',
+    'notifications:read',
+    'notifications:manage',
     'enquiries:read',
     'enquiries:accept',
     'cases:create',
@@ -42,6 +44,8 @@ const ROLE_PERMISSIONS: Record<string, string[]> = {
   ],
 
   ADVOCATE_PARTNER: [
+    'notifications:read',
+    'notifications:manage',
     'enquiries:read',
     'enquiries:accept',
     'cases:create',
@@ -69,6 +73,8 @@ const ROLE_PERMISSIONS: Record<string, string[]> = {
 
   // Alias for backward compatibility with database seed
   ADVOCATE_ADMIN: [
+    'notifications:read',
+    'notifications:manage',
     'enquiries:read',
     'enquiries:accept',
     'cases:create',
@@ -95,6 +101,7 @@ const ROLE_PERMISSIONS: Record<string, string[]> = {
   ],
 
   LEGAL_SCRUTINIZER: [
+    'notifications:read',
     'enquiries:read',
     'cases:read_all',
     'cases:read_own',
@@ -112,6 +119,7 @@ const ROLE_PERMISSIONS: Record<string, string[]> = {
 
   // Alias for backward compatibility with database seed
   RESEARCH_STAFF: [
+    'notifications:read',
     'enquiries:read',
     'cases:read_all',
     'cases:read_own',
@@ -128,6 +136,7 @@ const ROLE_PERMISSIONS: Record<string, string[]> = {
   ],
 
   INTAKE_CLERK: [
+    'notifications:read',
     'enquiries:read',
     'enquiries:accept',
     'cases:create',

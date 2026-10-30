@@ -12,3 +12,14 @@ binding = "DB"
 database_name = "aks-portal-db"
 database_id = "c987d1f0-a579-4e4c-8482-36482bebfd7f"
 migrations_dir = "database"
+
+[[queues.producers]]
+binding = "NOTIFICATION_QUEUE"
+queue = "aks-notification-queue"
+
+[[queues.consumers]]
+queue = "aks-notification-queue"
+max_batch_size = 10
+max_batch_timeout = 30
+max_retries = 3
+dead_letter_queue = "aks-notification-dlq"
