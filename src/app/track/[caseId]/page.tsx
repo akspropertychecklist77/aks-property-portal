@@ -32,58 +32,78 @@ export default function ClientTrackPage({ params }: { params: Promise<{ caseId: 
   const [loading, setLoading] = useState(true);
   const [uploadSuccess, setUploadSuccess] = useState(false);
   const [activeTab, setActiveTab] = useState<'timeline' | 'documents' | 'preview'>('timeline');
+  const [phonePrompt, setPhonePrompt] = useState(false);
+  const [inputPhone, setInputPhone] = useState('');
+  const [authError, setAuthError] = useState<string | null>(null);
 
-  useEffect(() => {
-    // 1. Fetch from live SQL database
-    fetch(`/api/cases/${rawId}`)
-      .then(res => res.json())
-      .then(result => {
+  const fetchTrackingData = (phoneQuery?: string) => {
+    setLoading(true);
+    setAuthError(null);
+    const url = `/api/tracking/${rawId}${phoneQuery ? `?phone=${encodeURIComponent(phoneQuery)}` : ''}`;
+
+    fetch(url)
+      .then(async (res) => {
+        const result = await res.json();
+        if (res.status === 401) {
+          setPhonePrompt(true);
+          setLoading(false);
+          return;
+        }
+
         if (result.success && result.data) {
           const dbData = result.data;
-          const stageIndex = (dbData.current_stage || 1) - 1;
+          const stageIndex = (dbData.currentStage || 1) - 1;
           const stageId = PROCESS_STAGES[stageIndex]?.id || '1_ENQUIRY';
 
           setCaseData({
-            id: dbData.id,
-            clientName: dbData.client_name,
-            clientPhone: dbData.client_phone,
-            clientEmail: dbData.client_email,
-            serviceRequired: dbData.service_package,
+            id: dbData.caseId,
+            clientName: dbData.clientName,
+            clientPhone: dbData.maskedPhone,
+            clientEmail: dbData.maskedEmail || undefined,
+            serviceRequired: dbData.servicePackage,
             district: dbData.district,
-            surveyNumber: dbData.survey_number || '',
-            totalAgreedCost: dbData.total_fee || 6500,
-            advanceAmount: dbData.advance_amount || 5200,
-            advancePaid: dbData.payment_status === 'advance_paid' || dbData.payment_status === 'fully_paid',
-            balanceAmount: dbData.balance_amount || 1300,
-            balancePaid: dbData.payment_status === 'fully_paid',
+            surveyNumber: dbData.surveyNumber || '',
+            totalAgreedCost: dbData.escrowBilling.totalFee || 6500,
+            advanceAmount: Math.round(dbData.escrowBilling.totalFee * 0.8),
+            advancePaid: dbData.escrowBilling.advancePaid > 0,
+            balanceAmount: dbData.escrowBilling.balanceDue,
+            balancePaid: dbData.escrowBilling.isFullyPaid,
             currentStage: stageId,
-            createdAt: dbData.created_at,
-            updatedAt: dbData.updated_at,
-            ecRecords: dbData.ecRecords || [],
-            parentDocs: dbData.parentDocs || [],
-            currentDoc: dbData.revenueRecord || {
+            createdAt: new Date().toISOString(),
+            updatedAt: new Date().toISOString(),
+            ecRecords: [],
+            parentDocs: [],
+            currentDoc: {
               id: 'curr_1',
               pattaNumber: '',
               pattaType: 'Individual',
-              pattaHolder: dbData.client_name,
+              pattaHolder: dbData.clientName,
               fmbVerified: false,
               tslrVerified: false,
-              revenueStatus: 'Clear',
+              revenueStatus: dbData.scrutinySummary.revenueStatus,
               notes: '',
             },
-            legalOpinion: dbData.legalOpinion || {
-              marketableTitle: 'Pending Verification',
-              encumbranceStatus: 'Nil Encumbrance',
-              revenueCompliance: 'Full Patta Available',
+            legalOpinion: {
+              marketableTitle: dbData.scrutinySummary.marketableTitle,
+              encumbranceStatus: dbData.scrutinySummary.ecStatus,
+              revenueCompliance: dbData.scrutinySummary.revenueStatus,
               keyFindings: [],
               recommendations: [],
-              advocateSignoff: false,
+              advocateSignoff: dbData.scrutinySummary.advocateSignoff,
             },
-            uploadedFiles: [],
+            uploadedFiles: dbData.availableDocuments?.map((d: any) => ({
+              id: d.id,
+              name: d.fileName,
+              category: d.category,
+              url: d.downloadUrl,
+              size: 'Verified',
+              date: 'Active',
+            })) || [],
           });
+          setPhonePrompt(false);
           setLoading(false);
         } else {
-          // Fallback to local data
+          // Fallback to local demo cases
           const found = INITIAL_CASES.find(
             c => c.id.toUpperCase() === rawId.toUpperCase() || c.clientPhone === rawId
           );
@@ -98,12 +118,58 @@ export default function ClientTrackPage({ params }: { params: Promise<{ caseId: 
         setCaseData(found || null);
         setLoading(false);
       });
+  };
+
+  useEffect(() => {
+    fetchTrackingData();
   }, [rawId]);
 
   if (loading) {
     return (
       <div className="min-h-screen bg-[#09090b] flex items-center justify-center text-slate-900 dark:text-zinc-100">
         <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-amber-500"></div>
+      </div>
+    );
+  }
+
+  if (phonePrompt) {
+    return (
+      <div className="min-h-screen bg-[#09090b] text-zinc-100 flex flex-col items-center justify-center p-4">
+        <div className="max-w-md w-full space-y-4 p-8 rounded-2xl bg-[#121215] border border-zinc-800/80 shadow-xl">
+          <ShieldCheck className="w-10 h-10 text-amber-500 mx-auto" />
+          <h2 className="text-lg font-bold text-center">Client Security Verification</h2>
+          <p className="text-xs text-zinc-400 text-center">
+            To view the live legal due diligence docket <span className="font-mono text-amber-400 font-bold">&quot;{rawId}&quot;</span>, please verify your registered mobile number.
+          </p>
+          <form
+            onSubmit={(e) => {
+              e.preventDefault();
+              fetchTrackingData(inputPhone);
+            }}
+            className="space-y-3 pt-2"
+          >
+            <input
+              type="text"
+              placeholder="Enter 10-digit Mobile or last 4 digits"
+              value={inputPhone}
+              onChange={(e) => setInputPhone(e.target.value)}
+              className="w-full px-4 py-2.5 rounded-lg bg-zinc-900 border border-zinc-700 text-sm text-zinc-100 placeholder-zinc-500 focus:outline-none focus:border-amber-500"
+              required
+            />
+            {authError && <p className="text-xs text-rose-500">{authError}</p>}
+            <button
+              type="submit"
+              className="w-full py-2.5 rounded-lg bg-amber-500 hover:bg-amber-400 text-zinc-950 font-bold text-xs transition-all"
+            >
+              Verify & View Progress
+            </button>
+          </form>
+          <div className="pt-2 text-center">
+            <Link href="/" className="text-xs text-zinc-500 hover:text-zinc-300">
+              Return to Search
+            </Link>
+          </div>
+        </div>
       </div>
     );
   }
