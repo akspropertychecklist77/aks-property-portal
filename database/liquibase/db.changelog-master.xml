@@ -13,6 +13,8 @@
 
     <include file="changesets/001-initial-schema.xml" relativeToChangelogFile="true"/>
     <include file="changesets/002-seed-demo-cases.xml" relativeToChangelogFile="true"/>
+    <include file="changesets/003-add-enquiries-and-schema-extensions.xml" relativeToChangelogFile="true"/>
+    <include file="changesets/004-add-audit-merkle-and-dynamic-metadata.xml" relativeToChangelogFile="true"/>
 
 </databaseChangeLog>
 

@@ -1,0 +1,156 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog
+    xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+        http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-latest.xsd">
+
+    <!-- ========================================================================= -->
+    <!-- 004a: CRYPTOGRAPHIC MERKLE-CHAIN AUDIT LOG (Legal Tamper-Evident Ledger)   -->
+    <!-- ========================================================================= -->
+    <changeSet id="004-create-table-case-audit-logs" author="akspropertychecklist">
+        <comment>Cryptographic SHA-256 Merkle chain recording every state change and user action</comment>
+        <createTable tableName="case_audit_logs">
+            <column name="id" type="VARCHAR(60)">
+                <constraints primaryKey="true" nullable="false"/>
+            </column>
+            <column name="case_id" type="VARCHAR(30)">
+                <constraints nullable="false" foreignKeyName="fk_audit_case" references="cases(id)"/>
+            </column>
+            <column name="action" type="VARCHAR(100)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="previous_state" type="TEXT">
+                <constraints nullable="true"/>
+            </column>
+            <column name="new_state" type="TEXT">
+                <constraints nullable="true"/>
+            </column>
+            <column name="performed_by" type="VARCHAR(150)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="ip_address" type="VARCHAR(45)">
+                <constraints nullable="true"/>
+            </column>
+            <column name="checksum_hash" type="VARCHAR(64)">
+                <constraints nullable="true"/>
+            </column>
+            <column name="previous_hash" type="VARCHAR(64)">
+                <constraints nullable="true"/>
+            </column>
+            <column name="timestamp" type="TIMESTAMP" defaultValueComputed="CURRENT_TIMESTAMP">
+                <constraints nullable="false"/>
+            </column>
+        </createTable>
+
+        <createIndex tableName="case_audit_logs" indexName="idx_audit_case">
+            <column name="case_id"/>
+            <column name="timestamp" descending="true"/>
+        </createIndex>
+    </changeSet>
+
+    <!-- ========================================================================= -->
+    <!-- 004b: DYNAMIC METADATA ENGINE - MODULES CATALOG                          -->
+    <!-- ========================================================================= -->
+    <changeSet id="005-create-table-sys-modules" author="akspropertychecklist">
+        <comment>Catalog of platform modules configured dynamically without redeployments</comment>
+        <createTable tableName="sys_modules">
+            <column name="id" type="VARCHAR(36)">
+                <constraints primaryKey="true" nullable="false"/>
+            </column>
+            <column name="module_key" type="VARCHAR(60)">
+                <constraints nullable="false" unique="true"/>
+            </column>
+            <column name="display_name" type="VARCHAR(120)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="icon_name" type="VARCHAR(50)" defaultValue="Folder">
+                <constraints nullable="false"/>
+            </column>
+            <column name="display_order" type="INT" defaultValueNumeric="1">
+                <constraints nullable="false"/>
+            </column>
+            <column name="is_active" type="BOOLEAN" defaultValueBoolean="true">
+                <constraints nullable="false"/>
+            </column>
+            <column name="created_at" type="TIMESTAMP" defaultValueComputed="CURRENT_TIMESTAMP">
+                <constraints nullable="false"/>
+            </column>
+        </createTable>
+    </changeSet>
+
+    <!-- ========================================================================= -->
+    <!-- 004c: DYNAMIC METADATA ENGINE - ENTITIES CATALOG & JSON SCHEMAS           -->
+    <!-- ========================================================================= -->
+    <changeSet id="006-create-table-sys-entities" author="akspropertychecklist">
+        <comment>Entity configurations, field types, validations, and dynamic layout schemas</comment>
+        <createTable tableName="sys_entities">
+            <column name="id" type="VARCHAR(36)">
+                <constraints primaryKey="true" nullable="false"/>
+            </column>
+            <column name="module_id" type="VARCHAR(36)">
+                <constraints nullable="false" foreignKeyName="fk_entities_module" references="sys_modules(id)"/>
+            </column>
+            <column name="entity_key" type="VARCHAR(80)">
+                <constraints nullable="false" unique="true"/>
+            </column>
+            <column name="table_name" type="VARCHAR(80)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="schema_definition_json" type="TEXT">
+                <constraints nullable="false"/>
+            </column>
+            <column name="version" type="INT" defaultValueNumeric="1">
+                <constraints nullable="false"/>
+            </column>
+            <column name="created_at" type="TIMESTAMP" defaultValueComputed="CURRENT_TIMESTAMP">
+                <constraints nullable="false"/>
+            </column>
+            <column name="updated_at" type="TIMESTAMP" defaultValueComputed="CURRENT_TIMESTAMP">
+                <constraints nullable="false"/>
+            </column>
+        </createTable>
+    </changeSet>
+
+    <!-- ========================================================================= -->
+    <!-- 004d: RBAC & ABAC - SYSTEM PERMISSIONS REGISTRY                          -->
+    <!-- ========================================================================= -->
+    <changeSet id="007-create-table-sys-permissions" author="akspropertychecklist">
+        <comment>Granular system permission capabilities</comment>
+        <createTable tableName="sys_permissions">
+            <column name="id" type="VARCHAR(36)">
+                <constraints primaryKey="true" nullable="false"/>
+            </column>
+            <column name="permission_code" type="VARCHAR(80)">
+                <constraints nullable="false" unique="true"/>
+            </column>
+            <column name="module_key" type="VARCHAR(60)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="description" type="VARCHAR(255)">
+                <constraints nullable="true"/>
+            </column>
+            <column name="created_at" type="TIMESTAMP" defaultValueComputed="CURRENT_TIMESTAMP">
+                <constraints nullable="false"/>
+            </column>
+        </createTable>
+    </changeSet>
+
+    <!-- ========================================================================= -->
+    <!-- 004e: RBAC & ABAC - ROLE TO PERMISSION MAPPING                            -->
+    <!-- ========================================================================= -->
+    <changeSet id="008-create-table-sys-role-permissions" author="akspropertychecklist">
+        <comment>Many-to-many association mapping roles to permission capabilities</comment>
+        <createTable tableName="sys_role_permissions">
+            <column name="role_id" type="VARCHAR(40)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="permission_id" type="VARCHAR(36)">
+                <constraints nullable="false" foreignKeyName="fk_role_permissions_perm" references="sys_permissions(id)"/>
+            </column>
+        </createTable>
+        <addPrimaryKey tableName="sys_role_permissions" columnNames="role_id, permission_id" constraintName="pk_sys_role_permissions"/>
+    </changeSet>
+
+</databaseChangeLog>
+

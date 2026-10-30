@@ -1,5 +1,7 @@
 import { NextResponse } from 'next/server';
 import { executeQuery, executeRun } from '@/lib/db';
+import { authenticateRequest, hasPermission } from '@/lib/api/rbac';
+import { problemResponse, successResponse } from '@/lib/api/errors';
 
 export async function POST(
   request: Request,
@@ -8,8 +10,22 @@ export async function POST(
   try {
     const { id } = await params;
     const caseId = decodeURIComponent(id).trim().toUpperCase();
-    const body = await request.json();
+
+    // Authenticate user
+    const { user } = await authenticateRequest(request);
+
+    const body = await request.json().catch(() => ({}));
     const { type, data } = body;
+
+    if (!data) {
+      return problemResponse({
+        status: 400,
+        type: 'https://api.akspropertychecklist.in/errors/INVALID_PAYLOAD',
+        title: 'Missing Payload',
+        detail: 'Request body must contain a valid "data" object.',
+        req: request,
+      });
+    }
 
     if (type === 'EC_RECORD') {
       const recordId = data.id || `ec_${Date.now()}`;
@@ -38,11 +54,15 @@ export async function POST(
         ]
       );
 
-      return NextResponse.json({
-        success: true,
-        message: 'EC Record saved to database successfully',
-        recordId,
-      });
+      return successResponse(
+        {
+          recordId,
+          caseId,
+          message: 'EC Record indexed in Job Card successfully.',
+        },
+        { caseId, recordId },
+        201
+      );
     }
 
     if (type === 'PARENT_DOC') {
@@ -72,17 +92,33 @@ export async function POST(
         ]
       );
 
-      return NextResponse.json({
-        success: true,
-        message: 'Parent Document saved to database successfully',
-        recordId,
-      });
+      return successResponse(
+        {
+          recordId,
+          caseId,
+          message: 'Parent deed genealogy link saved successfully.',
+        },
+        { caseId, recordId },
+        201
+      );
     }
 
-    return NextResponse.json({ success: false, error: 'Unknown record type' }, { status: 400 });
+    return problemResponse({
+      status: 400,
+      type: 'https://api.akspropertychecklist.in/errors/INVALID_RECORD_TYPE',
+      title: 'Unknown Record Type',
+      detail: `Unsupported record type "${type}". Allowed: EC_RECORD, PARENT_DOC.`,
+      req: request,
+    });
   } catch (error: any) {
     console.error('Job Card DB Error:', error);
-    return NextResponse.json({ success: false, error: error.message }, { status: 500 });
+    return problemResponse({
+      status: 500,
+      type: 'https://api.akspropertychecklist.in/errors/JOB_CARD_ERROR',
+      title: 'Job Card Mutation Failed',
+      detail: error.message || 'An unexpected error occurred in Job Card operations.',
+      req: request,
+    });
   }
 }
 
@@ -93,11 +129,24 @@ export async function PUT(
   try {
     const { id } = await params;
     const caseId = decodeURIComponent(id).trim().toUpperCase();
-    const body = await request.json();
+
+    // Authenticate user
+    const { user } = await authenticateRequest(request);
+
+    const body = await request.json().catch(() => ({}));
     const { type, data } = body;
 
+    if (!data) {
+      return problemResponse({
+        status: 400,
+        type: 'https://api.akspropertychecklist.in/errors/INVALID_PAYLOAD',
+        title: 'Missing Payload',
+        detail: 'Request body must contain a valid "data" object.',
+        req: request,
+      });
+    }
+
     if (type === 'REVENUE_PATTA') {
-      // Upsert revenue records
       await executeRun(
         `INSERT INTO revenue_records (
           id, case_id, patta_number, patta_holder_name, field_survey_no,
@@ -140,19 +189,36 @@ export async function PUT(
         ]
       );
 
-      return NextResponse.json({
-        success: true,
-        message: 'Revenue records (Patta, Chitta, FMB) updated in database',
+      return successResponse({
+        caseId,
+        message: 'Revenue records (Patta, Chitta, FMB) updated in database.',
       });
     }
 
     if (type === 'ADVOCATE_OPINION') {
+      // Security Gate: Signing off the opinion requires 'stage:sign_opinion' capability
+      if (data.advocateSignoff && user && !hasPermission(user.role, 'stage:sign_opinion')) {
+        return problemResponse({
+          status: 403,
+          type: 'https://api.akspropertychecklist.in/errors/UNAUTHORIZED_OPINION_SIGNOFF',
+          title: 'Sign-Off Authority Required',
+          detail: 'Only Advocate Partner (Bar Council Enrollment No. MS/1245/2005) is authorized to sign and certify legal opinions.',
+          req: request,
+        });
+      }
+
+      const signOffStatus = data.advocateSignoff ? 'approved' : 'draft';
+      const advocateName = data.advocateName || user?.fullName || 'Advocate A.K. Saravanan (M.E. Energy, LLB)';
+      const barCouncilNo = data.barCouncilNo || user?.barCouncilNo || 'MS/1245/2005';
+
       await executeRun(
         `INSERT INTO legal_opinions (
-          id, case_id, advocate_name, root_of_title, marketable_title_certified,
+          id, case_id, advocate_name, bar_council_reg_no, root_of_title, marketable_title_certified,
           encumbrance_status, legal_scrutiny_summary, special_conditions, sign_off_status, signed_at
-        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP)
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP)
         ON CONFLICT(case_id) DO UPDATE SET
+          advocate_name = excluded.advocate_name,
+          bar_council_reg_no = excluded.bar_council_reg_no,
           marketable_title_certified = excluded.marketable_title_certified,
           encumbrance_status = excluded.encumbrance_status,
           legal_scrutiny_summary = excluded.legal_scrutiny_summary,
@@ -162,26 +228,44 @@ export async function PUT(
         [
           `op_${Date.now()}`,
           caseId,
-          data.advocateName || 'Advocate A.K. Saravanan (M.E. Energy, LLB)',
+          advocateName,
+          barCouncilNo,
           data.rootOfTitle || 'Chain of title unbroken for 30+ years.',
           data.marketableTitle === 'Clear' ? 1 : 0,
           data.encumbranceStatus || 'Nil Encumbrance',
           Array.isArray(data.keyFindings) ? data.keyFindings.join('\n') : data.keyFindings || '',
           Array.isArray(data.recommendations) ? data.recommendations.join('\n') : data.recommendations || '',
-          data.advocateSignoff ? 'approved' : 'draft',
+          signOffStatus,
         ]
       );
 
-      return NextResponse.json({
-        success: true,
-        message: 'Advocate Legal Opinion signed and recorded in database',
+      return successResponse({
+        caseId,
+        signOffStatus,
+        advocateName,
+        barCouncilNo,
+        message: data.advocateSignoff
+          ? `Advocate Legal Opinion formally signed and certified under ${barCouncilNo}.`
+          : 'Draft legal opinion findings saved successfully.',
       });
     }
 
-    return NextResponse.json({ success: false, error: 'Unknown update type' }, { status: 400 });
+    return problemResponse({
+      status: 400,
+      type: 'https://api.akspropertychecklist.in/errors/INVALID_UPDATE_TYPE',
+      title: 'Unknown Update Type',
+      detail: `Unsupported update type "${type}". Allowed: REVENUE_PATTA, ADVOCATE_OPINION.`,
+      req: request,
+    });
   } catch (error: any) {
     console.error('Job Card PUT Error:', error);
-    return NextResponse.json({ success: false, error: error.message }, { status: 500 });
+    return problemResponse({
+      status: 500,
+      type: 'https://api.akspropertychecklist.in/errors/JOB_CARD_ERROR',
+      title: 'Job Card Update Failed',
+      detail: error.message || 'An unexpected error occurred during update.',
+      req: request,
+    });
   }
 }
 
@@ -196,24 +280,44 @@ export async function DELETE(
     const type = searchParams.get('type');
     const recordId = searchParams.get('recordId');
 
+    // Authenticate user
+    const { user } = await authenticateRequest(request);
+
     if (!recordId) {
-      return NextResponse.json({ success: false, error: 'Record ID required' }, { status: 400 });
+      return problemResponse({
+        status: 400,
+        type: 'https://api.akspropertychecklist.in/errors/MISSING_PARAM',
+        title: 'Missing Record ID',
+        detail: 'The "recordId" query parameter is required for deletion.',
+        req: request,
+      });
     }
 
     if (type === 'EC_RECORD') {
       await executeRun(`DELETE FROM ec_records WHERE id = ? AND case_id = ?;`, [recordId, caseId]);
-      return NextResponse.json({ success: true, message: 'EC record deleted' });
+      return successResponse({ recordId, caseId, message: 'EC record deleted from Job Card.' });
     }
 
     if (type === 'PARENT_DOC') {
       await executeRun(`DELETE FROM parent_documents WHERE id = ? AND case_id = ?;`, [recordId, caseId]);
-      return NextResponse.json({ success: true, message: 'Parent document deleted' });
+      return successResponse({ recordId, caseId, message: 'Parent document deleted from Job Card.' });
     }
 
-    return NextResponse.json({ success: false, error: 'Invalid delete target' }, { status: 400 });
+    return problemResponse({
+      status: 400,
+      type: 'https://api.akspropertychecklist.in/errors/INVALID_TARGET',
+      title: 'Invalid Delete Target',
+      detail: 'Invalid delete target type. Allowed: EC_RECORD, PARENT_DOC.',
+      req: request,
+    });
   } catch (error: any) {
     console.error('Job Card DELETE Error:', error);
-    return NextResponse.json({ success: false, error: error.message }, { status: 500 });
+    return problemResponse({
+      status: 500,
+      type: 'https://api.akspropertychecklist.in/errors/JOB_CARD_ERROR',
+      title: 'Deletion Failed',
+      detail: error.message || 'An unexpected error occurred during deletion.',
+      req: request,
+    });
   }
 }
-

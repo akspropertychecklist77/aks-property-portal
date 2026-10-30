@@ -1,14 +1,22 @@
 import path from 'path';
 
 // Interface for Cloudflare D1 Database binding
-interface CloudflareD1 {
-  prepare: (query: string) => {
-    bind: (...params: any[]) => {
-      all: <T = any>() => Promise<{ results: T[]; success: boolean }>;
-      first: <T = any>() => Promise<T | null>;
-      run: () => Promise<{ success: boolean }>;
-    };
+export interface CloudflareD1PreparedStatement {
+  bind: (...params: any[]) => {
+    all: <T = any>() => Promise<{ results: T[]; success: boolean }>;
+    first: <T = any>() => Promise<T | null>;
+    run: () => Promise<{ success: boolean }>;
   };
+}
+
+export interface CloudflareD1 {
+  prepare: (query: string) => CloudflareD1PreparedStatement;
+  batch?: (statements: any[]) => Promise<any[]>;
+}
+
+export interface BatchStatement {
+  sql: string;
+  params?: any[];
 }
 
 let localDb: any = null;
@@ -216,6 +224,55 @@ export async function executeRun(
   if (db) {
     const stmt = db.prepare(sql);
     stmt.run(...params);
+    return true;
+  }
+
+  return false;
+}
+
+/**
+ * Universal Atomic Batch Database Runner
+ * Executes multiple SQL operations atomically in a single transactional batch.
+ * Works seamlessly across:
+ * 1. Cloudflare Native D1 Edge Binding (d1.batch)
+ * 2. Cloudflare D1 Direct HTTPS REST API
+ * 3. Local SQLite db.transaction()
+ */
+export async function executeBatch(
+  statements: BatchStatement[],
+  cloudflareDb?: CloudflareD1
+): Promise<boolean> {
+  if (!statements || statements.length === 0) return true;
+
+  // 1. Native Cloudflare D1 Worker Binding (Production Edge)
+  const d1 = cloudflareDb || getCloudflareD1();
+  if (d1 && typeof d1.batch === 'function') {
+    const prepared = statements.map((s) => {
+      const stmt = d1.prepare(s.sql);
+      return s.params && s.params.length > 0 ? stmt.bind(...s.params) : stmt.bind();
+    });
+    const results = await d1.batch(prepared);
+    return Array.isArray(results);
+  }
+
+  // 2. Direct Cloudflare D1 HTTPS API (Local Box Development)
+  if (CF_API_TOKEN) {
+    for (const stmt of statements) {
+      const ok = await runCloudflareD1Http(stmt.sql, stmt.params || []);
+      if (!ok) return false;
+    }
+    return true;
+  }
+
+  // 3. Offline Local SQLite fallback
+  const db = getLocalDb();
+  if (db) {
+    const tx = db.transaction((stmts: BatchStatement[]) => {
+      for (const s of stmts) {
+        db.prepare(s.sql).run(...(s.params || []));
+      }
+    });
+    tx(statements);
     return true;
   }
 

@@ -253,3 +253,4 @@ CREATE TABLE IF NOT EXISTS case_milestone_logs (
     logged_at TEXT NOT NULL DEFAULT (datetime('now'))
 );
 ```
+
