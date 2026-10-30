@@ -217,6 +217,38 @@ CREATE TABLE IF NOT EXISTS case_milestone_logs (
 
 CREATE INDEX IF NOT EXISTS idx_logs_case_id ON case_milestone_logs(case_id);
 
+-- 9. Case Welcome Letters (Stage 3 Engagement & Requisition)
+CREATE TABLE IF NOT EXISTS case_welcome_letters (
+    id VARCHAR(36) PRIMARY KEY,
+    case_id VARCHAR(30) UNIQUE NOT NULL REFERENCES cases(id) ON DELETE CASCADE,
+    letter_ref_no VARCHAR(60) UNIQUE NOT NULL,
+    letter_date DATE NOT NULL,
+    template_version VARCHAR(20) DEFAULT 'v1.0' NOT NULL,
+    scope_summary TEXT NOT NULL,
+    documents_required_json TEXT NOT NULL,
+    delivery_timeline_days INT DEFAULT 7 NOT NULL,
+    total_fee DECIMAL(10,2) NOT NULL,
+    advance_amount DECIMAL(10,2) NOT NULL,
+    balance_amount DECIMAL(10,2) NOT NULL,
+    terms_and_conditions TEXT NOT NULL,
+    custom_clauses TEXT,
+    approval_status VARCHAR(30) DEFAULT 'draft' NOT NULL, -- draft, awaiting_approval, approved
+    approved_by VARCHAR(100),
+    approved_at TIMESTAMP,
+    sent_status VARCHAR(30) DEFAULT 'not_sent' NOT NULL,   -- not_sent, sent
+    sent_at TIMESTAMP,
+    sent_channel VARCHAR(40),                             -- email, whatsapp, courier, in_person
+    sent_by VARCHAR(100),
+    dispatch_ref VARCHAR(100),
+    pdf_storage_path VARCHAR(500),
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP NOT NULL,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP NOT NULL
+);
+
+CREATE INDEX IF NOT EXISTS idx_wl_case_id ON case_welcome_letters(case_id);
+CREATE INDEX IF NOT EXISTS idx_wl_ref_no ON case_welcome_letters(letter_ref_no);
+CREATE INDEX IF NOT EXISTS idx_wl_status ON case_welcome_letters(approval_status, sent_status);
+
 -- =============================================================================
 -- Initial Demonstration Seed Data
 -- =============================================================================

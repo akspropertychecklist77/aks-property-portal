@@ -8,6 +8,7 @@ const __dirname = path.dirname(__filename);
 const modules = [
   { id: 'Module 1', name: 'Enquiry Intake & Triage Desk', script: 'test-module1-enquiries.mjs' },
   { id: 'Module 2', name: 'Job Card & 30-Year EC Matrix', script: 'test-module2-ec-and-docs.mjs' },
+  { id: 'Stage 3',  name: 'Welcome Letter & 80% Advance', script: 'test-welcome-letter.mjs' },
   { id: 'Module 3', name: 'Parent Deed & Title Genealogy', script: 'test-module3-parent-deeds.mjs' },
   { id: 'Module 4', name: 'Revenue Verification (Patta/Chitta/FMB)', script: 'test-module4-revenue.mjs' },
   { id: 'Module 5', name: 'Advocate Opinion & Digital Sign-Off', script: 'test-module5-opinion.mjs' },
@@ -57,3 +58,4 @@ for (const r of results) {
 
 console.log('\nAll layers verified against live Cloudflare D1 & APAC production schemas.');
 if (totalFailed > 0) process.exit(1);
+

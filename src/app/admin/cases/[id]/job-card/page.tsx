@@ -30,7 +30,17 @@ import {
   Building2,
   Calendar,
   Layers,
-  MapPin
+  MapPin,
+  Mail,
+  Send,
+  AlertTriangle,
+  Lock,
+  Unlock,
+  CheckSquare,
+  Square,
+  FileBox,
+  Clock,
+  UserCheck
 } from 'lucide-react';
 import { INITIAL_CASES } from '@/lib/data';
 import { ClientCase, ECRecord, ParentDocument } from '@/lib/types';
@@ -98,42 +108,49 @@ const DEFAULT_EC_METADATA: EntityMetadata = {
     },
     parties: {
       type: 'TEXT',
-      label: 'Parties Involved (Seller to Buyer)',
-      placeholder: 'e.g. K. Ramasamy to Vendor R. Suresh',
-      validation: { required: true, message: 'Parties conveyance information is required' },
+      label: 'Executing Parties (Vendor / Purchaser)',
+      placeholder: 'e.g. K. Ramasamy (Vendor) -> Vellingiri D (Purchaser)',
+      validation: { required: true, message: 'Party details are required' },
     },
     remarks: {
       type: 'TEXTAREA',
-      label: 'Remarks / Findings',
-      placeholder: 'e.g. Clean schedule, boundaries match registered parent title',
+      label: 'Legal Scrutiny Observations / Encumbrance Finding',
+      placeholder: 'Clear title transfer. Nil pending court attachment or bank charges recorded.',
+      defaultValue: 'Clear title transfer. Nil pending court attachment or bank charges recorded.',
     },
     file: {
       type: 'FILE_UPLOAD',
-      label: 'Upload Certified EC Document (PDF / Word .docx / Image)',
+      label: 'Evidentiary Certified Copy / Receipt (PDF / JPEG)',
     },
   },
 };
 
 const DEFAULT_PARENT_METADATA: EntityMetadata = {
   entityKey: 'case_parent_doc',
-  displayName: 'Parent Title Deed',
+  displayName: 'Parent Title Deed (Devolution Link)',
   storageTable: 'case_parent_docs',
   sections: [
     {
-      id: 'sec_deed_info',
-      title: 'Title Deed Information',
-      columns: 2,
+      id: 'sec_deed_header',
+      title: 'Registered Deed Details',
+      columns: 3,
       fieldKeys: ['deedType', 'docNumber', 'year', 'sro'],
     },
     {
-      id: 'sec_conveyance',
-      title: 'Conveyance & Parties',
+      id: 'sec_deed_parties',
+      title: 'Devolution Parties',
       columns: 2,
-      fieldKeys: ['executants', 'claimants', 'extent', 'scheduleMatches'],
+      fieldKeys: ['executants', 'claimants'],
+    },
+    {
+      id: 'sec_schedule',
+      title: 'Property Schedule & Extent Verification',
+      columns: 2,
+      fieldKeys: ['extent', 'scheduleMatches'],
     },
     {
       id: 'sec_notes',
-      title: 'Scrutiny Notes & File Attachment',
+      title: 'Scrutiny Notes & Devolution Chain',
       columns: 1,
       fieldKeys: ['notes', 'file'],
     },
@@ -141,61 +158,60 @@ const DEFAULT_PARENT_METADATA: EntityMetadata = {
   fields: {
     deedType: {
       type: 'SELECT',
-      label: 'Deed Type',
+      label: 'Deed Classification',
       defaultValue: 'Registered Sale Deed',
       options: [
         { value: 'Registered Sale Deed', label: 'Registered Sale Deed' },
         { value: 'Partition Deed', label: 'Partition Deed' },
         { value: 'Settlement Deed', label: 'Settlement Deed' },
-        { value: 'Gift Deed', label: 'Gift Deed' },
         { value: 'Release Deed', label: 'Release Deed' },
+        { value: 'Will / Probate / Succession', label: 'Will / Probate / Succession' },
+        { value: 'Court Decree / Auction', label: 'Court Decree / Auction' },
       ],
     },
     docNumber: {
       type: 'TEXT',
-      label: 'Document Number & Year',
-      placeholder: 'e.g. Doc 2145/2005',
+      label: 'Deed Document Number',
+      placeholder: 'e.g. 1845/2010',
       validation: { required: true, message: 'Document number is required' },
     },
     year: {
       type: 'TEXT',
-      label: 'Year of Registration',
-      placeholder: 'e.g. 2005',
-      defaultValue: '2005',
+      label: 'Registration Year',
+      placeholder: 'e.g. 2010',
+      defaultValue: '2010',
     },
     sro: {
       type: 'TEXT',
-      label: 'Sub-Registrar Office (SRO)',
-      placeholder: 'e.g. Coimbatore SRO',
-      validation: { required: true, message: 'SRO jurisdiction is required' },
+      label: 'Registering SRO',
+      placeholder: 'e.g. Gandhipuram SRO',
     },
     executants: {
       type: 'TEXT',
-      label: 'Executant (Seller / Transferor)',
-      placeholder: 'Seller full name',
-      validation: { required: true, message: 'Executant name is required' },
+      label: 'Executants (Prior Owners)',
+      placeholder: 'e.g. R. Subramaniam & Legal Heirs',
     },
     claimants: {
       type: 'TEXT',
-      label: 'Claimant (Buyer / Transferee)',
-      placeholder: 'Buyer full name',
-      validation: { required: true, message: 'Claimant name is required' },
+      label: 'Claimants (Transferee)',
+      placeholder: 'e.g. K. Vellingiri',
     },
     extent: {
       type: 'TEXT',
-      label: 'Extent / Area Conveyed',
-      placeholder: 'e.g. 2,400 Sq.Ft / 5.5 Cents',
-      defaultValue: '2,400 Sq.Ft',
+      label: 'Deed Extent (Area)',
+      placeholder: 'e.g. 2,400 Sq.Ft (5.5 Cents)',
+      defaultValue: '2,400 Sq.Ft (5.5 Cents)',
     },
     scheduleMatches: {
       type: 'CHECKBOX',
-      label: 'Schedule Boundaries & Extent Match Unbroken Title',
+      label: 'Boundaries & Schedule Match Current Survey Extent',
       defaultValue: true,
     },
     notes: {
       type: 'TEXTAREA',
-      label: 'Advocate Scrutiny Notes',
-      defaultValue: 'Root title verified unbroken.',
+      label: 'Devolution Trace & Title Continuity Notes',
+      placeholder: 'Root title verified unbroken. Vendor possessed continuous physical possession.',
+      defaultValue: 'Root title verified unbroken. Vendor possessed continuous physical possession.',
     },
     file: {
       type: 'FILE_UPLOAD',
@@ -210,8 +226,12 @@ export default function JobCardPage({ params }: { params: Promise<{ id: string }
 
   const [currentCase, setCurrentCase] = useState<ClientCase | null>(null);
   const [loading, setLoading] = useState(true);
-  const [activeTab, setActiveTab] = useState<'ec' | 'parent' | 'current' | 'opinion'>('ec');
+  const [activeTab, setActiveTab] = useState<'welcome' | 'ec' | 'parent' | 'current' | 'opinion'>('welcome');
   const [copiedDocket, setCopiedDocket] = useState(false);
+  
+  // Live Draft Save Indicator
+  const [saveStatus, setSaveStatus] = useState<'saved' | 'unsaved' | 'syncing'>('saved');
+
   const copyDocketId = () => {
     if (!currentCase) return;
     navigator.clipboard.writeText(currentCase.id);
@@ -234,6 +254,50 @@ export default function JobCardPage({ params }: { params: Promise<{ id: string }
   const [parentMetadata, setParentMetadata] = useState<EntityMetadata>(DEFAULT_PARENT_METADATA);
   const [ecInitialValues, setEcInitialValues] = useState<Record<string, any>>({});
   const [parentInitialValues, setParentInitialValues] = useState<Record<string, any>>({});
+
+  // Welcome Letter (Stage 3) State
+  const [welcomeLetter, setWelcomeLetter] = useState<any>(null);
+  const [welcomeForm, setWelcomeForm] = useState({
+    letterRefNo: `AKS/WL/2026/${caseId.replace(/[^0-9]/g, '').slice(-4) || '0042'}`,
+    letterDate: new Date().toISOString().split('T')[0],
+    scopeSummary: 'Comprehensive 30-year property title scrutiny, Encumbrance Certificate (EC) cross-verification, revenue Patta mutation validation, and preparation of Certified Advocate Title Opinion Report.',
+    deliveryTimelineDays: 5,
+    totalFee: 6500,
+    advanceAmount: 5200,
+    balanceAmount: 1300,
+    termsAndConditions: '1. Professional legal opinion will be issued within 5 working days upon receipt of all required original/certified copies.\n2. 80% advance professional fee is payable upon issuance of this Welcome Letter to initiate search and scrutiny.\n3. The remaining 20% balance is payable prior to physical dispatch of the final sealed legal report.',
+    customClauses: '',
+    requiredDocs: [
+      { id: 'doc1', title: 'Original / Registered Copy of Vendor Title Deed', checked: true },
+      { id: 'doc2', title: 'Prior Parent Deeds for past 30+ years', checked: true },
+      { id: 'doc3', title: '30-Year Encumbrance Certificates (Form 15 & 16)', checked: true },
+      { id: 'doc4', title: 'Computerized e-Patta Extract & Chitta Copy', checked: true },
+      { id: 'doc5', title: 'Field Measurement Book (FMB) Sketch / TSLR', checked: true },
+      { id: 'doc6', title: 'Latest Property Tax / Land Revenue Assessment Receipts', checked: true },
+      { id: 'doc7', title: 'Layout Sanction / DTCP / CMDA Building Approval Copy', checked: false },
+    ],
+    dispatchChannel: 'whatsapp' as 'whatsapp' | 'email' | 'registered_post' | 'hand_delivery',
+    dispatchRef: '',
+  });
+
+  // Revenue Upload State
+  const [pattaUploading, setPattaUploading] = useState(false);
+  const [chittaUploading, setChittaUploading] = useState(false);
+  const [fmbUploading, setFmbUploading] = useState(false);
+
+  // Government e-Services (Patta & FMB) Auto-Fetch State
+  const [showGovRevenueModal, setShowGovRevenueModal] = useState(false);
+  const [govRevenueType, setGovRevenueType] = useState<'PATTA' | 'FMB'>('PATTA');
+  const [govFetching, setGovFetching] = useState(false);
+  const [govFetchedData, setGovFetchedData] = useState<any>(null);
+
+  const [govRevenueForm, setGovRevenueForm] = useState({
+    district: 'Chennai',
+    taluk: 'Alandur',
+    village: 'St. Thomas Mount',
+    surveyNumber: '428',
+    subdivision: '1',
+  });
 
   // Fetch Latest Dynamic Metadata from Cloudflare D1
   useEffect(() => {
@@ -291,54 +355,6 @@ export default function JobCardPage({ params }: { params: Promise<{ id: string }
       return () => clearTimeout(timer);
     }
   }, [toastNotice]);
-
-  // New EC Form State
-  const [ecForm, setEcForm] = useState({
-    period: '1994 - 2026 (32 Years)',
-    sro: 'Chennai SRO',
-    surveyNumber: '428/1',
-    docNumber: '',
-    natureOfDeed: 'Sale Deed',
-    parties: '',
-    isEncumbrance: false,
-    remarks: '',
-    file: null as File | null,
-    sourceType: 'MANUAL_UPLOAD' as 'MANUAL_UPLOAD' | 'TNREGINET_AUTO_FETCH',
-  });
-
-  // New Parent Doc Form State
-  const [parentForm, setParentForm] = useState({
-    sequenceOrder: 1,
-    deedType: 'Registered Sale Deed',
-    docNumber: '',
-    year: '2005',
-    sro: 'Chennai SRO',
-    executants: '',
-    claimants: '',
-    extent: '2,400 Sq.Ft',
-    scheduleMatches: true,
-    notes: 'Root title verified unbroken.',
-    file: null as File | null,
-  });
-
-  // Revenue Upload State
-  const [pattaUploading, setPattaUploading] = useState(false);
-  const [chittaUploading, setChittaUploading] = useState(false);
-  const [fmbUploading, setFmbUploading] = useState(false);
-
-  // Government e-Services (Patta & FMB) Auto-Fetch State
-  const [showGovRevenueModal, setShowGovRevenueModal] = useState(false);
-  const [govRevenueType, setGovRevenueType] = useState<'PATTA' | 'FMB'>('PATTA');
-  const [govFetching, setGovFetching] = useState(false);
-  const [govFetchedData, setGovFetchedData] = useState<any>(null);
-
-  const [govRevenueForm, setGovRevenueForm] = useState({
-    district: 'Chennai',
-    taluk: 'Alandur',
-    village: 'St. Thomas Mount',
-    surveyNumber: '428',
-    subdivision: '1',
-  });
 
   const loadCaseData = () => {
     fetch(`/api/cases/${caseId}`)
@@ -425,16 +441,20 @@ export default function JobCardPage({ params }: { params: Promise<{ id: string }
             uploadedFiles: [],
           });
 
-          // Pre-fill SRO & Survey in forms
-          setEcForm(prev => ({
+          // Sync welcome form defaults with case fees
+          setWelcomeForm(prev => ({
             ...prev,
-            sro: `${dbData.district} SRO`,
-            surveyNumber: dbData.survey_number || '',
+            totalFee: dbData.total_fee || 6500,
+            advanceAmount: dbData.advance_amount || 5200,
+            balanceAmount: dbData.balance_amount || 1300,
           }));
-          setParentForm(prev => ({
-            ...prev,
-            sro: `${dbData.district} SRO`,
-          }));
+
+          // Set default tab based on stage
+          if (stageId === '3_WELCOME_ADVANCE') {
+            setActiveTab('welcome');
+          } else if (stageId === '4_JOB_CARD') {
+            setActiveTab('ec');
+          }
         } else {
           const found = INITIAL_CASES.find(c => c.id.toUpperCase() === caseId.toUpperCase());
           setCurrentCase(found || null);
@@ -445,11 +465,153 @@ export default function JobCardPage({ params }: { params: Promise<{ id: string }
         setCurrentCase(found || null);
       })
       .finally(() => setLoading(false));
+
+    // Load Welcome Letter from Cloudflare D1
+    fetch(`/api/cases/${caseId}/welcome-letter`)
+      .then(res => res.json())
+      .then(result => {
+        if (result.success && result.data) {
+          setWelcomeLetter(result.data);
+          try {
+            const docsParsed = JSON.parse(result.data.documents_required_json || '[]');
+            if (Array.isArray(docsParsed) && docsParsed.length > 0) {
+              setWelcomeForm(prev => ({
+                ...prev,
+                letterRefNo: result.data.letter_ref_no || prev.letterRefNo,
+                letterDate: result.data.letter_date || prev.letterDate,
+                scopeSummary: result.data.scope_summary || prev.scopeSummary,
+                deliveryTimelineDays: result.data.delivery_timeline_days || prev.deliveryTimelineDays,
+                totalFee: result.data.total_fee || prev.totalFee,
+                advanceAmount: result.data.advance_amount || prev.advanceAmount,
+                balanceAmount: result.data.balance_amount || prev.balanceAmount,
+                termsAndConditions: result.data.terms_and_conditions || prev.termsAndConditions,
+                customClauses: result.data.custom_clauses || '',
+                dispatchChannel: (result.data.sent_channel as any) || 'whatsapp',
+                dispatchRef: result.data.dispatch_ref || '',
+              }));
+            }
+          } catch (e) {
+            console.warn('Could not parse documents json:', e);
+          }
+        }
+      })
+      .catch(() => {});
   };
 
   useEffect(() => {
     loadCaseData();
   }, [caseId]);
+
+  // Handler: Save Welcome Letter Draft
+  const handleSaveWelcomeDraft = async () => {
+    setSaveStatus('syncing');
+    try {
+      const res = await fetch(`/api/cases/${caseId}/welcome-letter`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          letter_ref_no: welcomeForm.letterRefNo,
+          letter_date: welcomeForm.letterDate,
+          scope_summary: welcomeForm.scopeSummary,
+          documents_required_json: JSON.stringify(welcomeForm.requiredDocs.filter(d => d.checked).map(d => d.title)),
+          delivery_timeline_days: welcomeForm.deliveryTimelineDays,
+          total_fee: welcomeForm.totalFee,
+          advance_amount: welcomeForm.advanceAmount,
+          balance_amount: welcomeForm.balanceAmount,
+          terms_and_conditions: welcomeForm.termsAndConditions,
+          custom_clauses: welcomeForm.customClauses || null,
+        }),
+      });
+
+      const data = await res.json();
+      if (!res.ok || !data.success) {
+        throw new Error(data.error || 'Failed to save welcome letter draft.');
+      }
+
+      setWelcomeLetter(data.data);
+      setSaveStatus('saved');
+      setToastNotice({
+        type: 'success',
+        message: '✓ Welcome Letter draft saved successfully to database!',
+      });
+    } catch (err: any) {
+      console.error('Failed to save welcome draft:', err);
+      setSaveStatus('unsaved');
+      setToastNotice({
+        type: 'error',
+        message: `✗ Error saving draft: ${err.message}`,
+      });
+    }
+  };
+
+  // Handler: Approve Welcome Letter (Advocate A.K. Saravanan MS/1245/2005)
+  const handleApproveWelcomeLetter = async () => {
+    setSubmitting(true);
+    try {
+      const res = await fetch(`/api/cases/${caseId}/welcome-letter/approve`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          approved_by: 'Advocate A.K. Saravanan (MS/1245/2005)',
+        }),
+      });
+
+      const data = await res.json();
+      if (!res.ok || !data.success) {
+        throw new Error(data.error || 'Failed to approve welcome letter.');
+      }
+
+      setWelcomeLetter(data.data);
+      setToastNotice({
+        type: 'success',
+        message: '✓ Welcome Letter officially approved by Advocate A.K. Saravanan (MS/1245/2005)!',
+      });
+    } catch (err: any) {
+      console.error('Approval failed:', err);
+      setToastNotice({
+        type: 'error',
+        message: `✗ Approval failed: ${err.message}`,
+      });
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  // Handler: Dispatch / Send Welcome Letter to Client
+  const handleSendWelcomeLetter = async () => {
+    setSubmitting(true);
+    try {
+      const res = await fetch(`/api/cases/${caseId}/welcome-letter/send`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          channel: welcomeForm.dispatchChannel,
+          dispatch_ref: welcomeForm.dispatchRef || `${welcomeForm.dispatchChannel.toUpperCase()}-${Date.now().toString().slice(-6)}`,
+          sent_by: 'Advocate Desk / Intake Staff',
+        }),
+      });
+
+      const data = await res.json();
+      if (!res.ok || !data.success) {
+        throw new Error(data.error || 'Failed to record letter dispatch.');
+      }
+
+      setWelcomeLetter(data.data);
+      setToastNotice({
+        type: 'success',
+        message: `✓ Welcome Letter marked as sent via ${welcomeForm.dispatchChannel}! ${data.gate4_unlocked ? 'Gate 4 is UNLOCKED.' : 'Gate 4 unlocks once 80% advance payment is received.'}`,
+      });
+      loadCaseData();
+    } catch (err: any) {
+      console.error('Dispatch recording failed:', err);
+      setToastNotice({
+        type: 'error',
+        message: `✗ Failed to mark sent: ${err.message}`,
+      });
+    } finally {
+      setSubmitting(false);
+    }
+  };
 
   // Dynamic Metadata Handler: Save EC Record into Cloudflare Database
   const handleSaveEcRecordDynamic = async (formValues: Record<string, any>) => {
@@ -460,7 +622,6 @@ export default function JobCardPage({ params }: { params: Promise<{ id: string }
       let uploadedFileUrl = '';
       let uploadedFileName = '';
 
-      // 1. Upload File if selected in dynamic form
       if (formValues.file instanceof File) {
         const fileFormData = new FormData();
         fileFormData.append('file', formValues.file);
@@ -480,7 +641,6 @@ export default function JobCardPage({ params }: { params: Promise<{ id: string }
         }
       }
 
-      // 2. Save EC Record into SQL Database
       const res = await fetch(`/api/cases/${caseId}/job-card`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -839,7 +999,7 @@ export default function JobCardPage({ params }: { params: Promise<{ id: string }
     return (
       <div className="p-16 text-center text-slate-500 dark:text-slate-400 flex flex-col items-center justify-center gap-3">
         <div className="w-6 h-6 border-2 border-blue-600 border-t-transparent rounded-full animate-spin" />
-        <span className="text-xs font-semibold">Opening Job Card from SQL database...</span>
+        <span className="text-xs font-semibold">Opening Legal Case Workbench from Cloudflare D1...</span>
       </div>
     );
   }
@@ -847,22 +1007,28 @@ export default function JobCardPage({ params }: { params: Promise<{ id: string }
   if (!currentCase) {
     return (
       <div className="p-8 text-center text-slate-500 dark:text-slate-400">
-        <p>Case {caseId} not found.</p>
-        <Link href="/admin" className="text-blue-600 dark:text-blue-400 underline text-xs mt-2 inline-block font-semibold">
-          Return to Admin Dashboard
+        <p>Case {caseId} not found in database.</p>
+        <Link href="/admin/pipeline" className="text-blue-600 dark:text-blue-400 underline text-xs mt-2 inline-block font-semibold">
+          Return to Legal Case Pipeline
         </Link>
       </div>
     );
   }
 
+  const stageIndex = PROCESS_STAGES.findIndex(s => s.id === currentCase.currentStage);
+  const isGate4Unlocked = Boolean(
+    (welcomeLetter?.sent_status === 'sent' || stageIndex >= 3) && currentCase.advancePaid
+  );
+
   return (
-    <div className="space-y-6 max-w-7xl mx-auto">
+    <div className="space-y-6 max-w-7xl mx-auto pb-20">
+      
       {/* Toast Notification Banner */}
       {toastNotice && (
         <div className={`p-4 rounded-xl border flex items-center justify-between gap-3 text-xs shadow-xs animate-in fade-in duration-200 ${
           toastNotice.type === 'success'
-            ? 'bg-emerald-50 dark:bg-emerald-950/70 border-emerald-200 dark:border-emerald-500/50 text-emerald-800 dark:text-emerald-200'
-            : 'bg-rose-50 dark:bg-rose-950/70 border-rose-200 dark:border-rose-500/50 text-rose-800 dark:text-rose-200'
+            ? 'bg-emerald-50 dark:bg-emerald-950/70 border-emerald-200 dark:border-emerald-800 text-emerald-800 dark:text-emerald-200'
+            : 'bg-rose-50 dark:bg-rose-950/70 border-rose-200 dark:border-rose-800 text-rose-800 dark:text-rose-200'
         }`}>
           <div className="flex items-center gap-2.5">
             {toastNotice.type === 'success' ? (
@@ -878,11 +1044,13 @@ export default function JobCardPage({ params }: { params: Promise<{ id: string }
         </div>
       )}
 
-      {/* Top Header Bar & Legal Executive Command Bar */}
-      <div className="bg-white dark:bg-slate-900 border border-slate-200/90 dark:border-slate-800 rounded-2xl p-5 sm:p-6 shadow-xs space-y-5">
+      {/* ========================================================================= */}
+      {/* 1. PERSISTENT CASE IDENTITY HEADER WITH LIVE DRAFT AUTO-SAVE INDICATOR    */}
+      {/* ========================================================================= */}
+      <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-5 shadow-xs space-y-4">
         
-        {/* Top Row: Back button, Docket ID, Stage Badge, and Action Buttons */}
-        <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 border-b border-slate-100 dark:border-slate-800/80 pb-4">
+        {/* Top Control Bar */}
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-slate-100 dark:border-slate-800 pb-4">
           <div className="flex items-center gap-3 flex-wrap">
             <Link
               href="/admin/pipeline"
@@ -893,7 +1061,7 @@ export default function JobCardPage({ params }: { params: Promise<{ id: string }
             </Link>
 
             <div className="flex items-center gap-2">
-              <span className="font-mono text-xs font-black text-blue-700 bg-blue-50 dark:text-blue-400 dark:bg-blue-500/10 px-2.5 py-1 rounded-lg border border-blue-200 dark:border-blue-500/20">
+              <span className="font-mono text-xs font-black text-blue-700 dark:text-blue-400 bg-blue-50 dark:bg-blue-950/70 px-2.5 py-1 rounded-lg border border-blue-200 dark:border-blue-800">
                 {currentCase.id}
               </span>
               <button
@@ -906,103 +1074,128 @@ export default function JobCardPage({ params }: { params: Promise<{ id: string }
               </button>
             </div>
 
-            <span className="px-2.5 py-0.5 rounded-full text-xs font-bold bg-blue-50 text-blue-700 border border-blue-200 dark:bg-blue-500/10 dark:text-blue-400 dark:border-blue-500/30 flex items-center gap-1.5">
+            <span className="px-2.5 py-0.5 rounded-full text-xs font-bold bg-blue-50 text-blue-700 border border-blue-200 dark:bg-blue-950/70 dark:text-blue-300 dark:border-blue-800 flex items-center gap-1.5">
               <Scale className="w-3.5 h-3.5" />
               <span>Advocate Legal Workbench • 8-Stage SOP</span>
             </span>
+
+            {/* LIVE DRAFT AUTO-SAVE INDICATOR */}
+            <div className="flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[11px] font-mono font-semibold bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700">
+              {saveStatus === 'saved' && (
+                <>
+                  <span className="w-2 h-2 rounded-full bg-emerald-500" />
+                  <span className="text-emerald-700 dark:text-emerald-400">✓ Draft saved</span>
+                </>
+              )}
+              {saveStatus === 'unsaved' && (
+                <>
+                  <span className="w-2 h-2 rounded-full bg-amber-500 animate-pulse" />
+                  <span className="text-amber-700 dark:text-amber-400">● Unsaved edits</span>
+                </>
+              )}
+              {saveStatus === 'syncing' && (
+                <>
+                  <RefreshCw className="w-3 h-3 text-blue-600 animate-spin" />
+                  <span className="text-blue-600 dark:text-blue-400">⟳ Syncing to D1...</span>
+                </>
+              )}
+            </div>
           </div>
 
-          <div className="flex items-center gap-2.5 flex-wrap">
+          {/* Right Header Controls */}
+          <div className="flex items-center gap-2 flex-wrap">
             <Link
               href={`/track/${currentCase.id}`}
               target="_blank"
-              className="px-3.5 py-2 text-xs font-bold text-slate-700 hover:text-slate-900 bg-white hover:bg-slate-50 border border-slate-200 dark:text-slate-300 dark:bg-slate-800 dark:border-slate-700 dark:hover:bg-slate-700 rounded-xl transition shadow-xs flex items-center gap-1.5"
+              className="px-3 py-1.5 text-xs font-bold text-slate-700 hover:text-slate-900 bg-white hover:bg-slate-50 border border-slate-200 dark:text-slate-300 dark:bg-slate-800 dark:border-slate-700 dark:hover:bg-slate-700 rounded-xl transition shadow-xs flex items-center gap-1.5"
             >
-              <span>Client Live Tracker</span>
+              <span>Client Tracker</span>
               <ExternalLink className="w-3.5 h-3.5 text-slate-400" />
             </Link>
 
             <button
               onClick={() => window.print()}
-              className="px-4 py-2 text-xs font-bold bg-blue-600 hover:bg-blue-700 text-white rounded-xl transition flex items-center gap-1.5 shadow-xs shadow-blue-500/20 cursor-pointer"
+              className="px-3.5 py-1.5 text-xs font-bold bg-blue-600 hover:bg-blue-700 text-white rounded-xl transition flex items-center gap-1.5 shadow-xs cursor-pointer"
             >
-              <Printer className="w-4 h-4" />
-              <span>Print Legal Opinion Report</span>
+              <Printer className="w-3.5 h-3.5" />
+              <span>Print Opinion</span>
             </button>
           </div>
         </div>
 
-        {/* Docket Executive Summary 4-Column Grid */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 pt-1">
-          {/* Col 1: Client & Contact */}
-          <div className="p-3.5 rounded-xl bg-slate-50/80 dark:bg-slate-950/60 border border-slate-200/80 dark:border-slate-800/80 space-y-1">
+        {/* 4-Metric Case Strip */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 pt-1">
+          {/* Client & Phone */}
+          <div className="p-3 rounded-xl bg-slate-50 dark:bg-slate-950/60 border border-slate-200/80 dark:border-slate-800 space-y-1">
             <span className="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider block">
               Client & Docket Party
             </span>
             <div className="text-sm font-extrabold text-slate-900 dark:text-white truncate">
               {currentCase.clientName}
             </div>
-            <div className="flex items-center gap-2 text-xs text-slate-600 dark:text-slate-400">
-              <a href={`tel:${currentCase.clientPhone}`} className="hover:text-blue-600 flex items-center gap-1 font-mono text-[11px]">
-                <Phone className="w-3 h-3 text-slate-400" />
-                <span>{currentCase.clientPhone}</span>
-              </a>
-            </div>
+            <a href={`tel:${currentCase.clientPhone}`} className="text-xs text-slate-600 dark:text-slate-400 hover:text-blue-600 flex items-center gap-1 font-mono">
+              <Phone className="w-3 h-3 text-slate-400" />
+              <span>{currentCase.clientPhone}</span>
+            </a>
           </div>
 
-          {/* Col 2: Property Schedule & SRO */}
-          <div className="p-3.5 rounded-xl bg-slate-50/80 dark:bg-slate-950/60 border border-slate-200/80 dark:border-slate-800/80 space-y-1">
+          {/* Property & Survey */}
+          <div className="p-3 rounded-xl bg-slate-50 dark:bg-slate-950/60 border border-slate-200/80 dark:border-slate-800 space-y-1">
             <span className="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider block">
-              Property & SRO Jurisdiction
+              Property & Jurisdiction
             </span>
             <div className="text-xs font-bold text-slate-900 dark:text-white truncate">
-              {currentCase.surveyNumber ? `Survey No. ${currentCase.surveyNumber}` : 'Pending Survey'}
+              {currentCase.surveyNumber ? `Survey S.F. ${currentCase.surveyNumber}` : 'Pending Survey'}
             </div>
             <div className="text-[11px] text-slate-500 dark:text-slate-400 truncate">
-              {currentCase.district} • {currentCase.serviceRequired}
+              {currentCase.district} SRO • {currentCase.serviceRequired}
             </div>
           </div>
 
-          {/* Col 3: Fee Gates (80/20 Rule) */}
-          <div className="p-3.5 rounded-xl bg-slate-50/80 dark:bg-slate-950/60 border border-slate-200/80 dark:border-slate-800/80 space-y-1">
+          {/* Escrow Status (80/20) */}
+          <div className="p-3 rounded-xl bg-slate-50 dark:bg-slate-950/60 border border-slate-200/80 dark:border-slate-800 space-y-1">
             <span className="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider block">
-              SOP Fee Gates (80 / 20)
+              80/20 Escrow Rule
             </span>
             <div className="flex items-center justify-between text-xs">
               <span className="text-slate-500">80% Advance:</span>
-              <span className="font-mono font-bold text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-950/60 px-1.5 py-0.2 rounded border border-emerald-200 dark:border-emerald-800">
-                ₹{currentCase.advanceAmount.toLocaleString('en-IN')} Paid ✓
+              <span className={`font-mono font-bold px-1.5 py-0.2 rounded border text-[11px] ${
+                currentCase.advancePaid 
+                  ? 'text-emerald-700 bg-emerald-50 border-emerald-200 dark:bg-emerald-950/60 dark:text-emerald-400 dark:border-emerald-800' 
+                  : 'text-amber-700 bg-amber-50 border-amber-200 dark:bg-amber-950/60 dark:text-amber-400 dark:border-amber-800'
+              }`}>
+                {currentCase.advancePaid ? '₹5,200 Paid ✓' : '₹5,200 Due'}
               </span>
             </div>
             <div className="flex items-center justify-between text-xs">
               <span className="text-slate-500">20% Balance:</span>
-              <span className="font-mono font-bold text-slate-600 dark:text-slate-400">
+              <span className="font-mono font-bold text-slate-600 dark:text-slate-400 text-[11px]">
                 ₹{currentCase.balanceAmount.toLocaleString('en-IN')} (Gate 8)
               </span>
             </div>
           </div>
 
-          {/* Col 4: Milestone Progress */}
-          <div className="p-3.5 rounded-xl bg-slate-50/80 dark:bg-slate-950/60 border border-slate-200/80 dark:border-slate-800/80 space-y-1.5">
+          {/* SOP Stage */}
+          <div className="p-3 rounded-xl bg-slate-50 dark:bg-slate-950/60 border border-slate-200/80 dark:border-slate-800 space-y-1.5">
             <div className="flex items-center justify-between">
               <span className="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider">
                 SOP Milestone
               </span>
               <span className="text-[10px] font-mono font-bold text-blue-600 dark:text-blue-400">
-                Stage 4 / 8
+                Step {stageIndex + 1} of 8
               </span>
             </div>
             <div className="text-xs font-extrabold text-slate-900 dark:text-white truncate">
-              Legal Scrutiny & EC Search
+              {PROCESS_STAGES[stageIndex]?.shortName || 'Job Card'}
             </div>
             <div className="grid grid-cols-8 gap-1 h-1.5 w-full mt-1">
-              {[1, 2, 3, 4, 5, 6, 7, 8].map((stg) => (
+              {PROCESS_STAGES.map((stg, idx) => (
                 <div
-                  key={stg}
+                  key={stg.id}
                   className={`rounded-full transition-all ${
-                    stg < 4
+                    idx < stageIndex
                       ? 'bg-emerald-500'
-                      : stg === 4
+                      : idx === stageIndex
                       ? 'bg-blue-600 shadow-xs'
                       : 'bg-slate-200 dark:bg-slate-800'
                   }`}
@@ -1013,769 +1206,955 @@ export default function JobCardPage({ params }: { params: Promise<{ id: string }
         </div>
       </div>
 
-      {/* 4 Interactive Workspace Tabs with High-Contrast SaaS styling */}
-      <div className="flex gap-2 border-b border-slate-200 dark:border-slate-800 pb-2 overflow-x-auto no-scrollbar">
-        <button
-          type="button"
-          onClick={() => setActiveTab('ec')}
-          className={`flex items-center gap-2.5 px-4 py-2.5 rounded-xl text-xs font-bold transition whitespace-nowrap cursor-pointer ${
-            activeTab === 'ec'
-              ? 'bg-blue-600 text-white shadow-xs shadow-blue-500/20'
-              : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-800 bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800'
-          }`}
-        >
-          <FileCheck className="w-4 h-4" />
-          <span>Module 4A: 30-Year EC Matrix</span>
-          <span className={`px-2 py-0.2 rounded-full text-[10px] font-mono ${
-            activeTab === 'ec' ? 'bg-white/20 text-white' : 'bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300'
-          }`}>
-            {currentCase.ecRecords.length}
-          </span>
-        </button>
+      {/* ========================================================================= */}
+      {/* 2. HIGH-VISIBILITY LEGAL INTEGRITY BANNER                                 */}
+      {/* ========================================================================= */}
+      <div className={`p-4 rounded-xl border flex flex-col md:flex-row md:items-center justify-between gap-3 text-xs shadow-xs ${
+        isGate4Unlocked
+          ? 'bg-emerald-50/70 border-emerald-200 dark:bg-emerald-950/30 dark:border-emerald-800/60 text-emerald-900 dark:text-emerald-200'
+          : 'bg-amber-50/70 border-amber-200 dark:bg-amber-950/30 dark:border-amber-800/60 text-amber-900 dark:text-amber-200'
+      }`}>
+        <div className="flex items-start gap-3">
+          <div className="mt-0.5">
+            {isGate4Unlocked ? (
+              <Unlock className="w-5 h-5 text-emerald-600 dark:text-emerald-400" />
+            ) : (
+              <Lock className="w-5 h-5 text-amber-600 dark:text-amber-400" />
+            )}
+          </div>
+          <div>
+            <div className="font-bold text-sm flex items-center gap-2">
+              <span>{isGate4Unlocked ? 'Statutory Gate 4 Clear: Scrutiny Active' : 'Statutory Gate 4 Interlock: Action Required'}</span>
+              <span className={`text-[10px] font-mono px-2 py-0.2 rounded font-bold border ${
+                isGate4Unlocked
+                  ? 'bg-emerald-100 text-emerald-800 border-emerald-300 dark:bg-emerald-900/60 dark:text-emerald-300 dark:border-emerald-700'
+                  : 'bg-amber-100 text-amber-800 border-amber-300 dark:bg-amber-900/60 dark:text-amber-300 dark:border-amber-700'
+              }`}>
+                {isGate4Unlocked ? 'UNLOCKED' : 'LOCKED'}
+              </span>
+            </div>
+            <p className="text-xs mt-0.5 opacity-90">
+              {isGate4Unlocked
+                ? 'Welcome Letter has been officially dispatched and 80% advance payment has been confirmed in escrow. 30-year EC and title chain scrutiny are authorized to proceed.'
+                : 'Stage 4 Job Card opening requires both: (1) Approved Welcome Letter marked as sent to client, and (2) 80% advance professional fee (₹5,200) recorded in escrow.'}
+            </p>
+          </div>
+        </div>
 
-        <button
-          type="button"
-          onClick={() => setActiveTab('parent')}
-          className={`flex items-center gap-2.5 px-4 py-2.5 rounded-xl text-xs font-bold transition whitespace-nowrap cursor-pointer ${
-            activeTab === 'parent'
-              ? 'bg-blue-600 text-white shadow-xs shadow-blue-500/20'
-              : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-800 bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800'
-          }`}
-        >
-          <Layers className="w-4 h-4" />
-          <span>Module 4B: Parent Title Chain</span>
-          <span className={`px-2 py-0.2 rounded-full text-[10px] font-mono ${
-            activeTab === 'parent' ? 'bg-white/20 text-white' : 'bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300'
-          }`}>
-            {currentCase.parentDocs.length}
-          </span>
-        </button>
-
-        <button
-          type="button"
-          onClick={() => setActiveTab('current')}
-          className={`flex items-center gap-2.5 px-4 py-2.5 rounded-xl text-xs font-bold transition whitespace-nowrap cursor-pointer ${
-            activeTab === 'current'
-              ? 'bg-blue-600 text-white shadow-xs shadow-blue-500/20'
-              : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-800 bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800'
-          }`}
-        >
-          <Building2 className="w-4 h-4" />
-          <span>Module 4C: Revenue & FMB Blueprint</span>
-          <span className={`px-2 py-0.2 rounded-full text-[10px] font-bold ${
-            activeTab === 'current' ? 'bg-white/20 text-white' : 'bg-emerald-50 text-emerald-700 dark:bg-emerald-950 dark:text-emerald-400'
-          }`}>
-            {currentCase.currentDoc.fmbVerified ? 'Verified ✓' : 'Pending'}
-          </span>
-        </button>
-
-        <button
-          type="button"
-          onClick={() => setActiveTab('opinion')}
-          className={`flex items-center gap-2.5 px-4 py-2.5 rounded-xl text-xs font-bold transition whitespace-nowrap cursor-pointer ${
-            activeTab === 'opinion'
-              ? 'bg-blue-600 text-white shadow-xs shadow-blue-500/20'
-              : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-800 bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800'
-          }`}
-        >
-          <Scale className="w-4 h-4" />
-          <span>Module 4D: Advocate Opinion & Seal</span>
-          <span className={`px-2 py-0.2 rounded-full text-[10px] font-bold ${
-            activeTab === 'opinion' ? 'bg-white/20 text-white' : 'bg-blue-50 text-blue-700 dark:bg-blue-950 dark:text-blue-400'
-          }`}>
-            MS/1245/2005
-          </span>
-        </button>
+        {!isGate4Unlocked && (
+          <button
+            onClick={() => setActiveTab('welcome')}
+            className="px-3.5 py-1.5 rounded-lg bg-amber-600 hover:bg-amber-700 text-white font-bold text-xs transition shadow-xs whitespace-nowrap self-start md:self-auto cursor-pointer"
+          >
+            Manage Welcome Letter →
+          </button>
+        )}
       </div>
 
       {/* ========================================================================= */}
-      {/* TAB 1: 30-YEAR EC INDEXING WORKSPACE                                      */}
+      {/* 3. DEDICATED DUAL-PANE WORKBENCH                                          */}
       {/* ========================================================================= */}
-      {activeTab === 'ec' && (
-        <div className="bg-white dark:bg-slate-900 border border-slate-200/90 dark:border-slate-800 rounded-2xl p-6 space-y-5 shadow-xs">
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
+        
+        {/* ======================================================================= */}
+        {/* LEFT PANE (65% - 8 Cols): 5 SECTION TABS & EDITING WORKBENCH            */}
+        {/* ======================================================================= */}
+        <div className="lg:col-span-8 space-y-5">
           
-          {/* EC Top Ribbon */}
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-100 dark:border-slate-800 pb-4">
-            <div>
-              <div className="flex items-center gap-2">
-                <h2 className="text-base font-bold text-slate-900 dark:text-white">
-                  Encumbrance Certificate (EC) 30-Year Index
-                </h2>
-                <span className="text-[10px] bg-emerald-50 dark:bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-500/20 px-2.5 py-0.5 rounded-full font-bold">
-                  SQL Database Linked
-                </span>
-              </div>
-              <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
-                Comprehensive search across Tamil Nadu SRO registers for unbroken title devolution.
-              </p>
-            </div>
-
+          {/* Tab Navigation Pill Bar */}
+          <div className="flex gap-1.5 border-b border-slate-200 dark:border-slate-800 pb-2 overflow-x-auto no-scrollbar">
+            {/* Tab 1: Welcome Letter */}
             <button
-              onClick={openEcModal}
-              className="flex items-center gap-1.5 px-3.5 py-2 bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold rounded-xl transition shadow-xs shadow-blue-500/20 self-start sm:self-auto cursor-pointer"
+              type="button"
+              onClick={() => setActiveTab('welcome')}
+              className={`flex items-center gap-2 px-3.5 py-2 rounded-xl text-xs font-bold transition whitespace-nowrap cursor-pointer ${
+                activeTab === 'welcome'
+                  ? 'bg-blue-600 text-white shadow-xs'
+                  : 'text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800'
+              }`}
             >
-              <Plus className="w-4 h-4" />
-              <span>Add EC Record</span>
+              <Mail className="w-3.5 h-3.5" />
+              <span>Stage 3: Welcome Letter</span>
+              <span className={`px-1.5 py-0.2 rounded-full text-[10px] font-mono ${
+                activeTab === 'welcome' ? 'bg-white/20 text-white' : 'bg-amber-100 text-amber-800'
+              }`}>
+                {welcomeLetter?.sent_status === 'sent' ? 'Sent ✓' : 'Draft'}
+              </span>
+            </button>
+
+            {/* Tab 2: EC Matrix */}
+            <button
+              type="button"
+              onClick={() => setActiveTab('ec')}
+              className={`flex items-center gap-2 px-3.5 py-2 rounded-xl text-xs font-bold transition whitespace-nowrap cursor-pointer ${
+                activeTab === 'ec'
+                  ? 'bg-blue-600 text-white shadow-xs'
+                  : 'text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800'
+              }`}
+            >
+              <FileCheck className="w-3.5 h-3.5" />
+              <span>30-Yr EC Matrix</span>
+              <span className={`px-1.5 py-0.2 rounded-full text-[10px] font-mono ${
+                activeTab === 'ec' ? 'bg-white/20 text-white' : 'bg-slate-100 dark:bg-slate-800'
+              }`}>
+                {currentCase.ecRecords.length}
+              </span>
+            </button>
+
+            {/* Tab 3: Parent Deeds */}
+            <button
+              type="button"
+              onClick={() => setActiveTab('parent')}
+              className={`flex items-center gap-2 px-3.5 py-2 rounded-xl text-xs font-bold transition whitespace-nowrap cursor-pointer ${
+                activeTab === 'parent'
+                  ? 'bg-blue-600 text-white shadow-xs'
+                  : 'text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800'
+              }`}
+            >
+              <Layers className="w-3.5 h-3.5" />
+              <span>Parent Title Chain</span>
+              <span className={`px-1.5 py-0.2 rounded-full text-[10px] font-mono ${
+                activeTab === 'parent' ? 'bg-white/20 text-white' : 'bg-slate-100 dark:bg-slate-800'
+              }`}>
+                {currentCase.parentDocs.length}
+              </span>
+            </button>
+
+            {/* Tab 4: Revenue & FMB */}
+            <button
+              type="button"
+              onClick={() => setActiveTab('current')}
+              className={`flex items-center gap-2 px-3.5 py-2 rounded-xl text-xs font-bold transition whitespace-nowrap cursor-pointer ${
+                activeTab === 'current'
+                  ? 'bg-blue-600 text-white shadow-xs'
+                  : 'text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800'
+              }`}
+            >
+              <Building2 className="w-3.5 h-3.5" />
+              <span>Revenue (Patta/FMB)</span>
+            </button>
+
+            {/* Tab 5: Advocate Opinion */}
+            <button
+              type="button"
+              onClick={() => setActiveTab('opinion')}
+              className={`flex items-center gap-2 px-3.5 py-2 rounded-xl text-xs font-bold transition whitespace-nowrap cursor-pointer ${
+                activeTab === 'opinion'
+                  ? 'bg-blue-600 text-white shadow-xs'
+                  : 'text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800'
+              }`}
+            >
+              <Scale className="w-3.5 h-3.5" />
+              <span>Advocate Opinion</span>
+              <span className={`px-1.5 py-0.2 rounded-full text-[10px] font-bold ${
+                activeTab === 'opinion' ? 'bg-white/20 text-white' : 'bg-purple-100 text-purple-800'
+              }`}>
+                MS/1245
+              </span>
             </button>
           </div>
 
-          {/* Metric Bar: Period, SRO, Status */}
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 p-3.5 bg-slate-50/80 dark:bg-slate-950/60 rounded-xl border border-slate-200/80 dark:border-slate-800/80 text-xs">
-            <div>
-              <span className="text-[10px] text-slate-400 uppercase font-bold block">Search Span</span>
-              <span className="font-mono font-bold text-slate-800 dark:text-slate-200">1994 – 2026 (32 Years)</span>
-            </div>
-            <div>
-              <span className="text-[10px] text-slate-400 uppercase font-bold block">Jurisdiction SRO</span>
-              <span className="font-bold text-slate-800 dark:text-slate-200">{currentCase.district} Sub-Registrar Office</span>
-            </div>
-            <div>
-              <span className="text-[10px] text-slate-400 uppercase font-bold block">Encumbrance Verdict</span>
-              <span className="font-bold text-emerald-600 dark:text-emerald-400">Nil Encumbrance Confirmed ✓</span>
-            </div>
-          </div>
-
-          {currentCase.ecRecords.length === 0 ? (
-            <div className="py-12 text-center text-slate-500 dark:text-slate-400 text-xs border border-dashed border-slate-200 dark:border-slate-800 rounded-xl space-y-2 bg-slate-50/50 dark:bg-slate-950/20">
-              <p>No EC entries registered yet for this property.</p>
-              <button
-                onClick={openEcModal}
-                className="text-blue-600 dark:text-blue-400 font-bold underline cursor-pointer"
-              >
-                Click here to add or upload the first EC document
-              </button>
-            </div>
-          ) : (
-            <div className="overflow-x-auto border border-slate-100 dark:border-slate-800 rounded-xl">
-              <table className="w-full text-left text-xs">
-                <thead>
-                  <tr className="border-b border-slate-200 dark:border-slate-800 text-slate-500 dark:text-slate-400 text-[11px] uppercase tracking-wider bg-slate-50/80 dark:bg-slate-950/40">
-                    <th className="py-3 px-4 font-semibold">Period</th>
-                    <th className="py-3 px-4 font-semibold">SRO</th>
-                    <th className="py-3 px-4 font-semibold">Survey No</th>
-                    <th className="py-3 px-4 font-semibold">Doc No & Nature</th>
-                    <th className="py-3 px-4 font-semibold">Parties Involved</th>
-                    <th className="py-3 px-4 font-semibold">Document / Source</th>
-                    <th className="py-3 px-4 font-semibold">Status</th>
-                    <th className="py-3 px-4 font-semibold text-right">Actions</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-slate-100 dark:divide-slate-800/80">
-                  {currentCase.ecRecords.map((ec) => (
-                    <tr key={ec.id} className="hover:bg-slate-50/70 dark:hover:bg-slate-800/50 transition">
-                      <td className="py-3 px-4 font-mono font-medium text-slate-700 dark:text-slate-300">{ec.period}</td>
-                      <td className="py-3 px-4 text-slate-700 dark:text-slate-300">{ec.sro}</td>
-                      <td className="py-3 px-4 font-mono text-slate-600 dark:text-slate-400">{ec.surveyNumber}</td>
-                      <td className="py-3 px-4">
-                        <div className="font-bold text-slate-900 dark:text-white font-mono">{ec.docNumber}</div>
-                        <div className="text-[10px] text-slate-500 dark:text-slate-400">{ec.natureOfDeed}</div>
-                      </td>
-                      <td className="py-3 px-4 text-slate-700 dark:text-slate-300 max-w-xs">{ec.parties}</td>
-                      <td className="py-3 px-4">
-                        {ec.docFileUrl ? (
-                          <a
-                            href={ec.docFileUrl}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="inline-flex items-center gap-1 px-2.5 py-1 rounded bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-blue-700 dark:text-blue-400 text-[11px] font-bold border border-slate-200 dark:border-slate-700 transition"
-                          >
-                            <FileText className="w-3 h-3" />
-                            <span>View PDF</span>
-                          </a>
-                        ) : (
-                          <span className="text-[10px] text-slate-400 italic">No File</span>
-                        )}
-                        {ec.sourceType === 'TNREGINET_AUTO_FETCH' && (
-                          <span className="ml-1 text-[9px] bg-blue-50 text-blue-700 border border-blue-200 dark:bg-blue-500/20 dark:text-blue-300 dark:border-blue-500/30 px-1.5 py-0.2 rounded font-semibold">
-                            TNReginet
-                          </span>
-                        )}
-                      </td>
-                      <td className="py-3 px-4">
-                        <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-50 text-emerald-700 border border-emerald-200 dark:bg-emerald-500/10 dark:text-emerald-400 dark:border-emerald-500/20">
-                          Verified ✓
-                        </span>
-                      </td>
-                      <td className="py-3 px-4 text-right">
-                        <button
-                          onClick={() => handleDeleteEcRecord(ec.id)}
-                          className="p-1.5 text-slate-400 hover:text-rose-600 hover:bg-rose-50 dark:hover:bg-slate-800 rounded transition"
-                          title="Delete Record"
-                        >
-                          <Trash2 className="w-3.5 h-3.5" />
-                        </button>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          )}
-        </div>
-      )}
-
-      {/* ========================================================================= */}
-      {/* TAB 2: PARENT DOCUMENTS & TITLE FLOW WORKSPACE                            */}
-      {/* ========================================================================= */}
-      {activeTab === 'parent' && (
-        <div className="bg-white dark:bg-slate-900 border border-slate-200/90 dark:border-slate-800 rounded-2xl p-6 space-y-5 shadow-xs">
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-100 dark:border-slate-800 pb-4">
-            <div>
-              <div className="flex items-center gap-2">
-                <h2 className="text-base font-bold text-slate-900 dark:text-white">
-                  Parent Document Flow (Title Genealogy)
-                </h2>
-                <span className="text-[10px] bg-blue-50 dark:bg-blue-500/10 text-blue-700 dark:text-blue-400 border border-blue-200 dark:border-blue-500/20 px-2.5 py-0.5 rounded-full font-bold">
-                  Chronological Chain
-                </span>
-              </div>
-              <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
-                Verify continuous genealogical flow from ancestral root title to current transferor.
-              </p>
-            </div>
-
-            <button
-              onClick={openParentModal}
-              className="flex items-center gap-1.5 px-3.5 py-2 bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold rounded-xl transition shadow-xs shadow-blue-500/20 self-start sm:self-auto cursor-pointer"
-            >
-              <Plus className="w-4 h-4" />
-              <span>Add Parent Deed</span>
-            </button>
-          </div>
-
-          {currentCase.parentDocs.length === 0 ? (
-            <div className="py-12 text-center text-slate-500 dark:text-slate-400 text-xs border border-dashed border-slate-200 dark:border-slate-800 rounded-xl space-y-2 bg-slate-50/50 dark:bg-slate-950/20">
-              <p>No parent deeds recorded yet.</p>
-              <button
-                onClick={openParentModal}
-                className="text-blue-600 dark:text-blue-400 font-bold underline cursor-pointer"
-              >
-                Click to add the root parent deed
-              </button>
-            </div>
-          ) : (
-            <div className="space-y-4 relative before:absolute before:left-5 before:top-4 before:bottom-4 before:w-0.5 before:bg-blue-100 dark:before:bg-blue-900/40">
-              {currentCase.parentDocs.map((pd, index) => (
-                <div
-                  key={pd.id}
-                  className="relative pl-10 group"
-                >
-                  {/* Step Timeline Node */}
-                  <div className="absolute left-3 top-5 w-4 h-4 rounded-full bg-blue-600 text-white flex items-center justify-center text-[9px] font-black shadow-xs ring-4 ring-white dark:ring-slate-900">
-                    {index + 1}
-                  </div>
-
-                  <div className="p-4 rounded-xl bg-slate-50/70 dark:bg-slate-950/60 border border-slate-200/90 dark:border-slate-800 hover:border-blue-400 dark:hover:border-blue-500 transition flex flex-col md:flex-row md:items-center justify-between gap-4 shadow-xs">
-                    <div className="space-y-1.5">
-                      <div className="flex items-center gap-2 flex-wrap">
-                        <span className="text-xs font-bold text-blue-700 dark:text-blue-400 bg-blue-50 dark:bg-blue-500/10 px-2 py-0.5 rounded border border-blue-200 dark:border-blue-500/20 font-mono">
-                          Link #{index + 1} • Year {pd.year}
-                        </span>
-                        <span className="font-extrabold text-sm text-slate-900 dark:text-white">{pd.deedType}</span>
-                        <span className="text-xs font-mono text-slate-500 dark:text-slate-400 font-semibold">• Doc {pd.docNumber}</span>
-                        <span className="text-xs text-slate-500 font-medium">({pd.sro})</span>
-                      </div>
-
-                      <div className="text-xs text-slate-700 dark:text-slate-300 flex items-center gap-2 flex-wrap">
-                        <span className="font-semibold text-slate-500">Conveyance:</span>
-                        <span className="font-bold text-slate-900 dark:text-white">{pd.executants}</span>
-                        <span className="text-blue-600">➔</span>
-                        <span className="font-bold text-slate-900 dark:text-white">{pd.claimants}</span>
-                      </div>
-
-                      <div className="text-[11px] text-slate-500 dark:text-slate-400 flex items-center gap-3">
-                        <span><strong>Extent:</strong> {pd.extent}</span>
-                        <span>•</span>
-                        <span>{pd.notes}</span>
-                      </div>
-                    </div>
-
-                    <div className="flex items-center gap-2.5 self-start md:self-center shrink-0">
-                      {pd.docFileUrl ? (
-                        <a
-                          href={pd.docFileUrl}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-white dark:bg-slate-800 hover:bg-slate-50 dark:hover:bg-slate-700 text-blue-700 dark:text-blue-400 text-xs font-bold border border-slate-200 dark:border-slate-700 transition shadow-xs"
-                        >
-                          <FileText className="w-3.5 h-3.5" />
-                          <span>View Deed PDF</span>
-                        </a>
-                      ) : (
-                        <span className="text-xs text-slate-400 italic">No PDF attached</span>
-                      )}
-
-                      <span className="px-2.5 py-1 rounded-lg text-xs font-bold bg-emerald-50 text-emerald-700 border border-emerald-200 dark:bg-emerald-500/10 dark:text-emerald-400 dark:border-emerald-500/20">
-                        Link Verified ✓
-                      </span>
-                    </div>
-                  </div>
-                </div>
-              ))}
-            </div>
-          )}
-        </div>
-      )}
-
-      {/* ========================================================================= */}
-      {/* TAB 3: REVENUE, PATTA & FMB MEASUREMENT                                    */}
-      {/* ========================================================================= */}
-      {activeTab === 'current' && (
-        <div className="bg-white dark:bg-slate-900 border border-slate-200/90 dark:border-slate-800 rounded-2xl p-6 space-y-6 shadow-xs">
-          <div className="border-b border-slate-100 dark:border-slate-800 pb-4">
-            <h2 className="text-base font-bold text-slate-900 dark:text-white flex items-center gap-2">
-              <span>Current Document & Revenue Department Records</span>
-              <span className="text-[10px] bg-blue-50 dark:bg-blue-500/10 text-blue-700 dark:text-blue-400 border border-blue-200 dark:border-blue-500/20 px-2.5 py-0.5 rounded-full font-bold">
-                Tamil Nadu e-Services (eservices.tn.gov.in)
-              </span>
-            </h2>
-            <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
-              Patta Passbook, Town Survey (TSLR), and Field Measurement Book (FMB) boundary verification.
-            </p>
-          </div>
-
-          {/* Government Revenue Automation Banner */}
-          <div className="p-4 rounded-xl bg-gradient-to-r from-blue-50 via-slate-50 to-blue-50/50 dark:from-blue-950/60 dark:to-slate-900 border border-blue-200 dark:border-blue-800/60 flex flex-col sm:flex-row sm:items-center justify-between gap-4 text-xs">
-            <div>
-              <span className="font-bold text-blue-800 dark:text-blue-300 flex items-center gap-1.5">
-                <Sparkles className="w-4 h-4 text-blue-600 dark:text-blue-400" />
-                Government Land Records Automation (eservices.tn.gov.in)
-              </span>
-              <p className="text-[11px] text-slate-600 dark:text-slate-400 mt-0.5">
-                Fetch official Tamil Nadu digital Patta/Chitta and Field Measurement Book (FMB) sketch by Survey No.
-              </p>
-            </div>
-            <div className="flex items-center gap-2 shrink-0">
-              <button
-                onClick={() => openGovRevenueModal('PATTA')}
-                className="px-3 py-1.5 rounded-lg bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs transition flex items-center gap-1.5 shadow-xs"
-              >
-                <Sparkles className="w-3.5 h-3.5" />
-                <span>Auto-Fetch Patta</span>
-              </button>
-              <button
-                onClick={() => openGovRevenueModal('FMB')}
-                className="px-3 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-900 text-white font-bold text-xs transition flex items-center gap-1.5 shadow-xs dark:bg-blue-600 dark:hover:bg-blue-700"
-              >
-                <Layers className="w-3.5 h-3.5" />
-                <span>Auto-Fetch FMB</span>
-              </button>
-            </div>
-          </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            {/* Patta Passbook Card */}
-            <div className="bg-slate-50/70 dark:bg-slate-950/70 border border-slate-200/90 dark:border-slate-800 rounded-xl p-5 space-y-4">
-              <div className="flex items-center justify-between border-b border-slate-200/80 dark:border-slate-800/80 pb-3">
-                <div className="flex items-center gap-2">
-                  <FileCheck className="w-4 h-4 text-blue-600 dark:text-blue-400" />
-                  <span className="font-bold text-sm text-slate-900 dark:text-white">Patta Passbook Record</span>
-                </div>
-                <div className="flex items-center gap-1.5">
-                  {currentCase.currentDoc.sourceType === 'ESERVICES_TN_AUTO_FETCH' && (
-                    <span className="text-[10px] text-blue-700 font-bold bg-blue-50 px-2 py-0.5 rounded border border-blue-200 dark:text-blue-400 dark:bg-blue-500/10 dark:border-blue-500/20">
-                      e-Services ✓
+          {/* ======================================================================= */}
+          {/* TAB 1: STAGE 3 – WELCOME LETTER GENERATION & MANAGEMENT                 */}
+          {/* ======================================================================= */}
+          {activeTab === 'welcome' && (
+            <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-6 space-y-6 shadow-xs">
+              
+              {/* Section Header & Status Badges */}
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-100 dark:border-slate-800 pb-4">
+                <div>
+                  <div className="flex items-center gap-2">
+                    <h2 className="text-base font-bold text-slate-900 dark:text-white">
+                      Stage 3: Welcome Letter & Statutory Engagement
+                    </h2>
+                    <span className={`text-[10px] font-mono px-2 py-0.5 rounded font-bold border ${
+                      welcomeLetter?.approval_status === 'approved'
+                        ? 'bg-emerald-50 text-emerald-700 border-emerald-200 dark:bg-emerald-950 dark:text-emerald-300'
+                        : 'bg-amber-50 text-amber-700 border-amber-200 dark:bg-amber-950 dark:text-amber-300'
+                    }`}>
+                      {welcomeLetter?.approval_status === 'approved' ? 'Advocate Approved ✓' : 'Awaiting Approval'}
                     </span>
+                  </div>
+                  <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
+                    Generates official client engagement letterhead, defines scope of scrutiny, and enforces the 80% advance payment gateway.
+                  </p>
+                </div>
+
+                {/* Quick Actions */}
+                <div className="flex items-center gap-2">
+                  <button
+                    type="button"
+                    onClick={handleSaveWelcomeDraft}
+                    className="px-3 py-1.5 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 hover:bg-slate-50 text-slate-700 dark:text-slate-300 text-xs font-semibold transition"
+                  >
+                    Save Draft
+                  </button>
+                  {welcomeLetter?.approval_status !== 'approved' && (
+                    <button
+                      type="button"
+                      onClick={handleApproveWelcomeLetter}
+                      disabled={submitting}
+                      className="px-3 py-1.5 rounded-lg bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold transition shadow-xs flex items-center gap-1.5"
+                    >
+                      <UserCheck className="w-3.5 h-3.5" />
+                      <span>Approve (MS/1245/2005)</span>
+                    </button>
                   )}
-                  <span className={`text-[10px] font-bold px-2 py-0.5 rounded border ${
-                    currentCase.currentDoc.pattaNumber !== 'Pending Upload'
-                      ? 'text-emerald-700 bg-emerald-50 border-emerald-200 dark:text-emerald-400 dark:bg-emerald-500/10 dark:border-emerald-500/20'
-                      : 'text-amber-700 bg-amber-50 border-amber-200 dark:text-amber-400 dark:bg-amber-500/10 dark:border-amber-500/20'
-                  }`}>
-                    {currentCase.currentDoc.pattaNumber}
+                </div>
+              </div>
+
+              {/* LIVE OFFICIAL ADVOCATE LETTERHEAD PREVIEW */}
+              <div className="border-2 border-slate-200 dark:border-slate-700 rounded-xl p-6 bg-slate-50/40 dark:bg-slate-950/40 space-y-5 print:border-none print:p-0">
+                
+                {/* Official Letterhead Header */}
+                <div className="border-b-2 border-blue-900 dark:border-blue-600 pb-4 flex flex-col sm:flex-row sm:items-start justify-between gap-4">
+                  <div>
+                    <div className="text-[10px] font-bold text-blue-700 dark:text-blue-400 uppercase tracking-widest">
+                      CHAMBERS OF ADVOCATE A.K. SARAVANAN, B.E., LLB
+                    </div>
+                    <h1 className="text-xl font-black text-slate-900 dark:text-white tracking-tight mt-0.5">
+                      A.K. SARAVANAN & ASSOCIATES
+                    </h1>
+                    <div className="text-xs text-slate-600 dark:text-slate-400 font-medium">
+                      Advocates & Property Legal Consultants • Bar Council of Tamil Nadu & Puducherry
+                    </div>
+                    <div className="text-[11px] font-mono text-slate-500 mt-1">
+                      Enrollment No: <strong className="text-slate-900 dark:text-white">MS/1245/2005</strong> • Chamber: 77 Lawyers Chamber, Combined Court Complex, Coimbatore - 641018
+                    </div>
+                  </div>
+
+                  <div className="text-right sm:self-start">
+                    <span className="text-[10px] text-slate-400 block font-mono">Reference No:</span>
+                    <input
+                      type="text"
+                      value={welcomeForm.letterRefNo}
+                      onChange={(e) => {
+                        setWelcomeForm({ ...welcomeForm, letterRefNo: e.target.value });
+                        setSaveStatus('unsaved');
+                      }}
+                      className="font-mono text-xs font-bold text-blue-700 dark:text-blue-400 bg-transparent border-b border-dashed border-blue-400 text-right focus:outline-none"
+                    />
+                    <div className="text-[11px] text-slate-500 mt-1">
+                      Date: <span className="font-semibold text-slate-700 dark:text-slate-300">{welcomeForm.letterDate}</span>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Recipient Details (Pre-filled from Case Docket) */}
+                <div className="text-xs space-y-1 bg-white dark:bg-slate-900 p-3.5 rounded-lg border border-slate-200 dark:border-slate-800">
+                  <div className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">To Client:</div>
+                  <div className="font-bold text-slate-900 dark:text-white text-sm">{currentCase.clientName}</div>
+                  <div className="text-slate-600 dark:text-slate-400 font-mono text-[11px]">Contact: {currentCase.clientPhone} • {currentCase.clientEmail || 'Email on file'}</div>
+                  <div className="text-slate-700 dark:text-slate-300 font-semibold mt-1">
+                    Matter: Property Title Verification & Legal Opinion • S.F. No. {currentCase.surveyNumber || 'Pending'}, {currentCase.district}
+                  </div>
+                </div>
+
+                {/* Scope Summary Field */}
+                <div className="space-y-1.5 text-xs">
+                  <label className="font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider text-[10px] block">
+                    Scope of Professional Due Diligence:
+                  </label>
+                  <textarea
+                    rows={2}
+                    value={welcomeForm.scopeSummary}
+                    onChange={(e) => {
+                      setWelcomeForm({ ...welcomeForm, scopeSummary: e.target.value });
+                      setSaveStatus('unsaved');
+                    }}
+                    className="w-full text-xs p-2.5 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-slate-900 dark:text-white focus:outline-none focus:border-blue-500"
+                  />
+                </div>
+
+                {/* Documents Required Checklist (Interactive) */}
+                <div className="space-y-2 text-xs">
+                  <label className="font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider text-[10px] block">
+                    Documents Requested from Client:
+                  </label>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 bg-white dark:bg-slate-900 p-3 rounded-lg border border-slate-200 dark:border-slate-800">
+                    {welcomeForm.requiredDocs.map((doc, idx) => (
+                      <label key={doc.id} className="flex items-start gap-2 cursor-pointer text-slate-700 dark:text-slate-300 text-[11px]">
+                        <input
+                          type="checkbox"
+                          checked={doc.checked}
+                          onChange={(e) => {
+                            const updated = [...welcomeForm.requiredDocs];
+                            updated[idx].checked = e.target.checked;
+                            setWelcomeForm({ ...welcomeForm, requiredDocs: updated });
+                            setSaveStatus('unsaved');
+                          }}
+                          className="mt-0.5 rounded text-blue-600"
+                        />
+                        <span className={doc.checked ? 'font-semibold text-slate-900 dark:text-white' : 'text-slate-400'}>
+                          {doc.title}
+                        </span>
+                      </label>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Professional Fees & Escrow Terms */}
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 p-3.5 rounded-xl bg-blue-50/60 dark:bg-blue-950/30 border border-blue-200 dark:border-blue-900 text-xs">
+                  <div>
+                    <span className="text-[10px] font-bold uppercase tracking-wider text-slate-500">Total Agreed Fee:</span>
+                    <div className="text-base font-black text-slate-900 dark:text-white font-mono mt-0.5">
+                      ₹{welcomeForm.totalFee.toLocaleString('en-IN')}
+                    </div>
+                  </div>
+                  <div>
+                    <span className="text-[10px] font-bold uppercase tracking-wider text-blue-700 dark:text-blue-400">80% Advance Payable (Now):</span>
+                    <div className="text-base font-black text-blue-700 dark:text-blue-400 font-mono mt-0.5">
+                      ₹{welcomeForm.advanceAmount.toLocaleString('en-IN')}
+                    </div>
+                  </div>
+                  <div>
+                    <span className="text-[10px] font-bold uppercase tracking-wider text-slate-500">20% Balance (At Dispatch):</span>
+                    <div className="text-base font-black text-slate-700 dark:text-slate-300 font-mono mt-0.5">
+                      ₹{welcomeForm.balanceAmount.toLocaleString('en-IN')}
+                    </div>
+                  </div>
+                </div>
+
+                {/* Advocate Sign-Off Stamp in Letterhead */}
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pt-3 border-t border-slate-200 dark:border-slate-800">
+                  <div className="text-[11px] text-slate-500">
+                    Expected Delivery: <strong>{welcomeForm.deliveryTimelineDays} Working Days</strong> from document receipt.
+                  </div>
+
+                  <div className="text-right">
+                    <div className="font-bold text-xs text-slate-900 dark:text-white">
+                      Advocate A.K. Saravanan (MS/1245/2005)
+                    </div>
+                    <div className="text-[10px] text-slate-500 font-mono">
+                      {welcomeLetter?.approval_status === 'approved' 
+                        ? `Approved by ${welcomeLetter.approved_by || 'A.K. Saravanan'}` 
+                        : 'Draft – Signature Pending'}
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* DISPATCH CONTROLS & AUDIT TRAIL */}
+              <div className="border border-slate-200 dark:border-slate-800 rounded-xl p-4 bg-slate-50 dark:bg-slate-950/60 space-y-3 text-xs">
+                <div className="font-bold text-slate-900 dark:text-white text-xs flex items-center justify-between">
+                  <span className="flex items-center gap-1.5">
+                    <Send className="w-3.5 h-3.5 text-blue-600" />
+                    <span>Client Dispatch Recording</span>
+                  </span>
+                  <span className="font-mono text-[10px] text-slate-500">
+                    Status: <strong className="uppercase">{welcomeLetter?.sent_status || 'not_sent'}</strong>
                   </span>
                 </div>
-              </div>
 
-              <div className="space-y-2 text-xs">
-                <div className="flex justify-between text-slate-700 dark:text-slate-300">
-                  <span className="text-slate-500">Patta Holder:</span>
-                  <span className="font-bold text-slate-900 dark:text-white">{currentCase.currentDoc.pattaHolder || currentCase.clientName}</span>
-                </div>
-                <div className="flex justify-between text-slate-700 dark:text-slate-300">
-                  <span className="text-slate-500">Survey & Subdivision:</span>
-                  <span className="font-mono">{currentCase.surveyNumber}</span>
-                </div>
-                {currentCase.currentDoc.villageTaluk && (
-                  <div className="flex justify-between text-slate-700 dark:text-slate-300">
-                    <span className="text-slate-500">Village & Taluk:</span>
-                    <span className="text-slate-700 dark:text-slate-200">{currentCase.currentDoc.villageTaluk}</span>
-                  </div>
-                )}
-                <div className="flex justify-between text-slate-700 dark:text-slate-300">
-                  <span className="text-slate-500">Chitta / Adangal:</span>
-                  <span className="text-emerald-700 dark:text-emerald-400 font-bold">Verified in Tamil Nadu Portal ✓</span>
-                </div>
-              </div>
-
-              {/* Action Buttons: Auto-Fetch & Upload */}
-              <div className="pt-3 border-t border-slate-200/80 dark:border-slate-800/80 flex flex-wrap items-center justify-between gap-2">
-                <div>
-                  {currentCase.currentDoc.pattaFileUrl ? (
-                    <a
-                      href={currentCase.currentDoc.pattaFileUrl}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="inline-flex items-center gap-1.5 text-xs text-blue-700 dark:text-blue-400 font-bold hover:underline"
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                  <div>
+                    <label className="text-[10px] font-bold text-slate-500 uppercase block mb-1">Delivery Channel</label>
+                    <select
+                      value={welcomeForm.dispatchChannel}
+                      onChange={(e: any) => setWelcomeForm({ ...welcomeForm, dispatchChannel: e.target.value })}
+                      className="w-full text-xs p-2 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900"
                     >
-                      <FileText className="w-3.5 h-3.5" />
-                      <span>View Patta</span>
-                      {currentCase.currentDoc.pattaFileUrl.toLowerCase().endsWith('.docx') || currentCase.currentDoc.pattaFileUrl.toLowerCase().endsWith('.doc') ? (
-                        <span className="px-1.5 py-0.5 rounded text-[10px] font-black uppercase tracking-wider bg-blue-100 text-blue-800 border border-blue-200 dark:bg-blue-500/20 dark:text-blue-400 dark:border-blue-500/30">
-                          DOCX
-                        </span>
-                      ) : (
-                        <span className="px-1.5 py-0.5 rounded text-[10px] font-black uppercase tracking-wider bg-red-100 text-red-800 border border-red-200 dark:bg-red-500/20 dark:text-red-400 dark:border-red-500/30">
-                          PDF
-                        </span>
-                      )}
-                    </a>
-                  ) : (
-                    <span className="text-xs text-slate-400">No document attached</span>
-                  )}
+                      <option value="whatsapp">WhatsApp Delivery</option>
+                      <option value="email">Email PDF</option>
+                      <option value="registered_post">Registered Post / Speed Post</option>
+                      <option value="hand_delivery">Hand Delivery / Office Pickup</option>
+                    </select>
+                  </div>
+
+                  <div>
+                    <label className="text-[10px] font-bold text-slate-500 uppercase block mb-1">Dispatch / Tracking Ref</label>
+                    <input
+                      type="text"
+                      placeholder="e.g. WA-MSG-94821 or SP-TN48201IN"
+                      value={welcomeForm.dispatchRef}
+                      onChange={(e) => setWelcomeForm({ ...welcomeForm, dispatchRef: e.target.value })}
+                      className="w-full text-xs p-2 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900"
+                    />
+                  </div>
+
+                  <div className="flex items-end">
+                    <button
+                      type="button"
+                      onClick={handleSendWelcomeLetter}
+                      disabled={submitting}
+                      className="w-full py-2 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs transition shadow-xs flex items-center justify-center gap-1.5 cursor-pointer disabled:opacity-50"
+                    >
+                      <Check className="w-4 h-4" />
+                      <span>Mark as Officially Sent</span>
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* ======================================================================= */}
+          {/* TAB 2: MODULE 4A – 30-YEAR ENCUMBRANCE CERTIFICATE (EC) MATRIX           */}
+          {/* ======================================================================= */}
+          {activeTab === 'ec' && (
+            <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-6 space-y-5 shadow-xs">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-100 dark:border-slate-800 pb-4">
+                <div>
+                  <h2 className="text-base font-bold text-slate-900 dark:text-white">
+                    Module 4A: 30-Year Encumbrance Certificate (EC) Search
+                  </h2>
+                  <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
+                    Records every registered transaction, mortgage, partition, or court attachment from 1994 to 2026.
+                  </p>
                 </div>
 
                 <div className="flex items-center gap-2">
                   <button
-                    onClick={() => openGovRevenueModal('PATTA')}
-                    className="px-2.5 py-1.5 rounded-lg bg-blue-50 hover:bg-blue-100 text-blue-700 border border-blue-200 text-xs font-bold transition flex items-center gap-1 dark:bg-blue-900/60 dark:hover:bg-blue-800 dark:text-blue-200 dark:border-blue-700/60"
-                    title="Auto-fetch directly from eservices.tn.gov.in"
+                    type="button"
+                    onClick={handleAutoFetchTNReginet}
+                    className="px-3 py-1.5 rounded-lg border border-blue-200 dark:border-blue-800 bg-blue-50 dark:bg-blue-950/60 text-blue-700 dark:text-blue-300 text-xs font-bold transition flex items-center gap-1.5"
                   >
-                    <Sparkles className="w-3 h-3 text-blue-600 dark:text-blue-400" />
-                    <span>Auto-Fetch</span>
+                    <Sparkles className="w-3.5 h-3.5" />
+                    <span>TNReginet Auto-Fetch</span>
                   </button>
 
-                  <label className="cursor-pointer px-3 py-1.5 rounded-lg bg-white hover:bg-slate-50 text-slate-700 dark:text-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-xs font-semibold border border-slate-200 dark:border-slate-700 transition flex items-center gap-1.5 shadow-xs">
-                    <Upload className="w-3.5 h-3.5 text-blue-600 dark:text-blue-400" />
-                    <span>{pattaUploading ? 'Uploading...' : 'Upload Patta'}</span>
-                    <input
-                      type="file"
-                      accept=".pdf,.doc,.docx,application/pdf,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document,image/*"
-                      className="hidden"
-                      onChange={(e) => {
-                        if (e.target.files?.[0]) handleRevenueUpload(e.target.files[0], 'PATTA');
-                      }}
-                    />
-                  </label>
-                </div>
-              </div>
-            </div>
-
-            {/* Chitta / Adangal Register Extract Card */}
-            <div className="bg-slate-50/70 dark:bg-slate-950/70 border border-slate-200/90 dark:border-slate-800 rounded-xl p-5 space-y-4">
-              <div className="flex items-center justify-between border-b border-slate-200/80 dark:border-slate-800/80 pb-3">
-                <div className="flex items-center gap-2">
-                  <FileCheck className="w-4 h-4 text-blue-600 dark:text-blue-400" />
-                  <span className="font-bold text-sm text-slate-900 dark:text-white">Chitta / Adangal Register (சிட்டா)</span>
-                </div>
-                <div className="flex items-center gap-1.5">
-                  <span className={`text-[10px] font-bold px-2 py-0.5 rounded border ${
-                    currentCase.currentDoc.chittaFileUrl
-                      ? 'text-emerald-700 bg-emerald-50 border-emerald-200 dark:text-emerald-400 dark:bg-emerald-500/10 dark:border-emerald-500/20'
-                      : 'text-amber-700 bg-amber-50 border-amber-200 dark:text-amber-400 dark:bg-amber-500/10 dark:border-amber-500/20'
-                  }`}>
-                    {currentCase.currentDoc.chittaFileUrl ? 'Extract Attached ✓' : 'Verified in TN Portal ✓'}
-                  </span>
-                </div>
-              </div>
-
-              <div className="space-y-2 text-xs">
-                <div className="flex justify-between text-slate-700 dark:text-slate-300">
-                  <span className="text-slate-500">Classification:</span>
-                  <span className="font-bold text-slate-900 dark:text-white">ரயத்து வாரி புஞ்சை (Ryotwari Dry Land)</span>
-                </div>
-                <div className="flex justify-between text-slate-700 dark:text-slate-300">
-                  <span className="text-slate-500">Survey No & Extent:</span>
-                  <span className="font-mono">{currentCase.surveyNumber} (0 Hectares 2.22 Ares)</span>
-                </div>
-                <div className="flex justify-between text-slate-700 dark:text-slate-300">
-                  <span className="text-slate-500">Annual Kist / Tax:</span>
-                  <span className="text-emerald-700 dark:text-emerald-400 font-semibold">₹4.50 (Paid & Clear)</span>
-                </div>
-              </div>
-
-              {/* Action Buttons: Upload Chitta */}
-              <div className="pt-3 border-t border-slate-200/80 dark:border-slate-800/80 flex flex-wrap items-center justify-between gap-2">
-                <div>
-                  {currentCase.currentDoc.chittaFileUrl ? (
-                    <a
-                      href={currentCase.currentDoc.chittaFileUrl}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="inline-flex items-center gap-1.5 text-xs text-blue-700 dark:text-blue-400 font-bold hover:underline"
-                    >
-                      <FileText className="w-3.5 h-3.5" />
-                      <span>View Chitta</span>
-                      {currentCase.currentDoc.chittaFileUrl.toLowerCase().endsWith('.docx') || currentCase.currentDoc.chittaFileUrl.toLowerCase().endsWith('.doc') ? (
-                        <span className="px-1.5 py-0.5 rounded text-[10px] font-black uppercase tracking-wider bg-blue-100 text-blue-800 border border-blue-200 dark:bg-blue-500/20 dark:text-blue-400 dark:border-blue-500/30">
-                          DOCX
-                        </span>
-                      ) : (
-                        <span className="px-1.5 py-0.5 rounded text-[10px] font-black uppercase tracking-wider bg-red-100 text-red-800 border border-red-200 dark:bg-red-500/20 dark:text-red-400 dark:border-red-500/30">
-                          PDF
-                        </span>
-                      )}
-                    </a>
-                  ) : (
-                    <span className="text-xs text-slate-400">No Chitta document attached</span>
-                  )}
-                </div>
-
-                <div className="flex items-center gap-2">
-                  <label className="cursor-pointer px-3 py-1.5 rounded-lg bg-white hover:bg-slate-50 text-slate-700 dark:text-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-xs font-semibold border border-slate-200 dark:border-slate-700 transition flex items-center gap-1.5 shadow-xs">
-                    <Upload className="w-3.5 h-3.5 text-blue-600 dark:text-blue-400" />
-                    <span>{chittaUploading ? 'Uploading...' : 'Upload Chitta'}</span>
-                    <input
-                      type="file"
-                      accept=".pdf,.doc,.docx,application/pdf,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document,image/*"
-                      className="hidden"
-                      onChange={(e) => {
-                        if (e.target.files?.[0]) handleRevenueUpload(e.target.files[0], 'CHITTA');
-                      }}
-                    />
-                  </label>
-                </div>
-              </div>
-            </div>
-
-            {/* Field Measurement Book (FMB) Sketch Card */}
-            <div className="bg-slate-50/70 dark:bg-slate-950/70 border border-slate-200/90 dark:border-slate-800 rounded-xl p-5 space-y-4 md:col-span-2">
-              <div className="flex items-center justify-between border-b border-slate-200/80 dark:border-slate-800/80 pb-3">
-                <div className="flex items-center gap-2">
-                  <Layers className="w-4 h-4 text-blue-600 dark:text-blue-400" />
-                  <span className="font-bold text-sm text-slate-900 dark:text-white">Field Measurement Book (FMB) Boundary Blueprint</span>
-                </div>
-                <div className="flex items-center gap-1.5">
-                  <span className={`text-[10px] font-bold px-2 py-0.5 rounded border ${
-                    currentCase.currentDoc.fmbVerified
-                      ? 'text-emerald-700 bg-emerald-50 border-emerald-200 dark:text-emerald-400 dark:bg-emerald-500/10 dark:border-emerald-500/20'
-                      : 'text-amber-700 bg-amber-50 border-amber-200 dark:text-amber-400 dark:bg-amber-500/10 dark:border-amber-500/20'
-                  }`}>
-                    {currentCase.currentDoc.fmbVerified ? 'Demarcated & Verified ✓' : 'Boundary Map'}
-                  </span>
-                </div>
-              </div>
-
-              {/* Vector FMB SVG Blueprint Display */}
-              <div className="p-4 rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 space-y-2">
-                <div className="flex items-center justify-between text-[11px] text-slate-500 dark:text-slate-400">
-                  <span className="font-bold text-blue-700 dark:text-blue-400 flex items-center gap-1">
-                    <Layers className="w-3.5 h-3.5" />
-                    Field Traverse Survey & Stone Demarcation (G-Line & Ladder):
-                  </span>
-                  <span className="font-mono text-slate-600 dark:text-slate-300">Scale: 1:500 Metric • TSLR Ward B, Block 12</span>
-                </div>
-
-                <div className="w-full flex justify-center py-2">
-                  <svg viewBox="0 0 500 240" className="w-full max-w-lg h-56 bg-slate-900 dark:bg-slate-950 rounded-xl border border-slate-200 dark:border-slate-800 p-2 shadow-inner">
-                    <defs>
-                      <pattern id="fmb-grid-main" width="20" height="20" patternUnits="userSpaceOnUse">
-                        <path d="M 20 0 L 0 0 0 20" fill="none" stroke="#1e293b" strokeWidth="0.5" />
-                      </pattern>
-                    </defs>
-                    <rect width="500" height="240" fill="url(#fmb-grid-main)" />
-
-                    {/* North Arrow */}
-                    <g transform="translate(450, 40)">
-                      <circle cx="0" cy="0" r="16" fill="#0f172a" stroke="#334155" strokeWidth="1" />
-                      <path d="M 0 -12 L 4 2 L 0 -1 L -4 2 Z" fill="#38bdf8" />
-                      <text x="0" y="14" fill="#38bdf8" fontSize="9" fontWeight="bold" textAnchor="middle">N</text>
-                    </g>
-
-                    {/* Main Parcel Polygon */}
-                    <rect x="130" y="55" width="240" height="130" fill="#0284c7" fillOpacity="0.12" stroke="#38bdf8" strokeWidth="2" />
-
-                    {/* Diagonal G-Line */}
-                    <line x1="130" y1="55" x2="370" y2="185" stroke="#f59e0b" strokeWidth="1.5" strokeDasharray="4 3" />
-                    <text x="255" y="115" fill="#f59e0b" fontSize="9" fontWeight="bold">G-Line 72.1 ft</text>
-
-                    {/* Corner Survey Stones */}
-                    <circle cx="130" cy="55" r="4" fill="#f59e0b" />
-                    <circle cx="370" cy="55" r="4" fill="#f59e0b" />
-                    <circle cx="370" cy="185" r="4" fill="#f59e0b" />
-                    <circle cx="130" cy="185" r="4" fill="#f59e0b" />
-
-                    {/* Center Parcel Label */}
-                    <text x="250" y="85" fill="#ffffff" fontSize="12" fontWeight="bold" textAnchor="middle">
-                      Survey No. {currentCase.surveyNumber || '428/1'}
-                    </text>
-                    <text x="250" y="100" fill="#94a3b8" fontSize="9" textAnchor="middle">
-                      Extent: 2,400 Sq.Ft (5.5 Cents)
-                    </text>
-
-                    {/* North Boundary */}
-                    <text x="250" y="45" fill="#38bdf8" fontSize="10" fontWeight="bold" textAnchor="middle">
-                      North: S.F. No. 427 (Private Patta Land - 60.0 ft)
-                    </text>
-
-                    {/* South Boundary */}
-                    <text x="250" y="205" fill="#38bdf8" fontSize="10" fontWeight="bold" textAnchor="middle">
-                      South: 30 Feet Public Layout Road (60.0 ft)
-                    </text>
-
-                    {/* East & West Dimensions */}
-                    <text x="385" y="125" fill="#38bdf8" fontSize="9" fontWeight="bold">East: 40.0 ft</text>
-                    <text x="50" y="125" fill="#38bdf8" fontSize="9" fontWeight="bold">West: 40.0 ft</text>
-                  </svg>
-                </div>
-              </div>
-
-              {/* Action Buttons: Auto-Fetch & Upload */}
-              <div className="pt-3 border-t border-slate-200/80 dark:border-slate-800/80 flex flex-wrap items-center justify-between gap-2">
-                <div>
-                  {currentCase.currentDoc.fmbFileUrl ? (
-                    <a
-                      href={currentCase.currentDoc.fmbFileUrl}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="inline-flex items-center gap-1.5 text-xs text-blue-700 dark:text-blue-400 font-bold hover:underline"
-                    >
-                      <FileText className="w-3.5 h-3.5" />
-                      <span>View FMB File</span>
-                    </a>
-                  ) : (
-                    <span className="text-xs text-slate-400">Official vector sketch generated from survey records</span>
-                  )}
-                </div>
-
-                <div className="flex items-center gap-2">
                   <button
-                    onClick={() => openGovRevenueModal('FMB')}
-                    className="px-2.5 py-1.5 rounded-lg bg-blue-50 hover:bg-blue-100 text-blue-700 border border-blue-200 text-xs font-bold transition flex items-center gap-1 dark:bg-blue-900/60 dark:hover:bg-blue-800 dark:text-blue-200 dark:border-blue-700/60"
+                    type="button"
+                    onClick={openEcModal}
+                    className="px-3.5 py-1.5 rounded-lg bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs transition shadow-xs flex items-center gap-1.5"
                   >
-                    <Layers className="w-3 h-3 text-blue-600 dark:text-blue-400" />
-                    <span>Auto-Fetch</span>
+                    <Plus className="w-3.5 h-3.5" />
+                    <span>Add EC Entry</span>
                   </button>
-
-                  <label className="cursor-pointer px-3 py-1.5 rounded-lg bg-white hover:bg-slate-50 text-slate-700 dark:text-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-xs font-semibold border border-slate-200 dark:border-slate-700 transition flex items-center gap-1.5 shadow-xs">
-                    <Upload className="w-3.5 h-3.5 text-blue-600 dark:text-blue-400" />
-                    <span>{fmbUploading ? 'Uploading...' : 'Upload Sketch (PDF / Word / Img)'}</span>
-                    <input
-                      type="file"
-                      accept=".pdf,.doc,.docx,application/pdf,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document,image/*"
-                      className="hidden"
-                      onChange={(e) => {
-                        if (e.target.files?.[0]) handleRevenueUpload(e.target.files[0], 'FMB');
-                      }}
-                    />
-                  </label>
                 </div>
               </div>
-            </div>
-          </div>
-        </div>
-      )}
 
-      {/* ========================================================================= */}
-      {/* TAB 4: ADVOCATE A.K. SARAVANAN OPINION SIGN-OFF & CERTIFICATION           */}
-      {/* ========================================================================= */}
-      {activeTab === 'opinion' && (
-        <div className="bg-white dark:bg-slate-900 border border-slate-200/90 dark:border-slate-800 rounded-2xl p-6 sm:p-8 space-y-6 shadow-xs">
-          
-          {/* Official Bar Council Advocate Letterhead Card */}
-          <div className="border border-slate-200 dark:border-slate-800 rounded-2xl p-6 bg-slate-50/50 dark:bg-slate-950/40 space-y-5">
-            <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-4 border-b border-slate-200 dark:border-slate-800 pb-5">
-              <div className="space-y-1">
-                <span className="text-[10px] font-bold uppercase tracking-wider text-blue-700 dark:text-blue-400 block">
-                  Bar Council of Tamil Nadu & Puducherry
-                </span>
-                <h3 className="text-xl font-black text-slate-900 dark:text-white">
-                  Advocate A.K. Saravanan, B.E., LLB
-                </h3>
-                <p className="text-xs text-slate-600 dark:text-slate-400">
-                  Advocate • Enrollment No: <strong className="text-slate-900 dark:text-white font-mono">MS/1245/2005</strong>
-                </p>
-                <p className="text-[11px] text-slate-500">
-                  Legal Chambers: 77, Lawyers Chamber, Combined Court Complex, Coimbatore - 641018
-                </p>
-              </div>
-
-              <div className="text-right sm:self-start">
-                <span className="inline-block px-3 py-1 rounded-full text-xs font-black bg-emerald-50 text-emerald-700 border border-emerald-200 dark:bg-emerald-950 dark:text-emerald-400 dark:border-emerald-800 shadow-xs">
-                  CERTIFIED TITLE OPINION ✓
-                </span>
-                <span className="block text-[10px] text-slate-400 font-mono mt-1">
-                  Docket Ref: {currentCase.id}
-                </span>
-              </div>
-            </div>
-
-            {/* Opinion Verdict Banner */}
-            <div className="p-4 rounded-xl bg-emerald-500/10 border border-emerald-200 dark:border-emerald-500/20 flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs">
-              <div className="space-y-1">
-                <span className="font-extrabold text-sm text-emerald-800 dark:text-emerald-300 flex items-center gap-1.5">
-                  <CheckCircle2 className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
-                  Title Scrutiny Finding: Clear, Marketable & Unencumbered Title
-                </span>
-                <p className="text-[11px] text-slate-600 dark:text-slate-400">
-                  Root of title verified unbroken for 30+ years with complete revenue Patta mutation and nil encumbrances.
-                </p>
-              </div>
-              <span className="px-3 py-1.5 rounded-lg bg-emerald-600 text-white font-bold text-xs shrink-0 self-start sm:self-auto shadow-xs">
-                Stage 6 Approved
-              </span>
-            </div>
-
-            {/* Structured Findings List */}
-            <div className="space-y-2">
-              <span className="text-xs font-bold text-slate-900 dark:text-white uppercase tracking-wider block">
-                Primary Scrutiny Observations & Title Trace:
-              </span>
-              <div className="space-y-1.5">
-                {currentCase.legalOpinion.keyFindings.map((finding, idx) => (
-                  <div key={idx} className="flex items-start gap-2.5 text-xs text-slate-700 dark:text-slate-300">
-                    <span className="w-1.5 h-1.5 rounded-full bg-blue-600 dark:bg-blue-400 mt-1.5 shrink-0" />
-                    <span>{finding}</span>
-                  </div>
-                ))}
-              </div>
-            </div>
-
-            {/* Recommendations / Conditions Precedent */}
-            <div className="p-4 rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 space-y-2 text-xs">
-              <span className="font-bold text-slate-900 dark:text-white uppercase tracking-wider block">
-                Conditions Precedent Prior to Registration:
-              </span>
-              <ul className="space-y-1 text-slate-600 dark:text-slate-300 list-disc list-inside">
-                {currentCase.legalOpinion.recommendations.map((rec, i) => (
-                  <li key={i}>{rec}</li>
-                ))}
-              </ul>
-            </div>
-
-            {/* Digital Signature & Seal */}
-            <div className="pt-4 border-t border-slate-200 dark:border-slate-800 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-              <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-xl bg-blue-50 text-blue-700 border border-blue-200 flex items-center justify-center font-bold">
-                  AK
+              {/* EC Records Table */}
+              {currentCase.ecRecords.length === 0 ? (
+                <div className="p-8 text-center border-2 border-dashed border-slate-200 dark:border-slate-800 rounded-xl space-y-2">
+                  <FileCheck className="w-8 h-8 text-slate-400 mx-auto" />
+                  <div className="font-bold text-xs text-slate-700 dark:text-slate-300">No EC Entries Recorded Yet</div>
+                  <p className="text-[11px] text-slate-500 max-w-sm mx-auto">
+                    Click &quot;Add EC Entry&quot; to index registered deeds from Form 15, or use TNReginet Auto-Fetch to simulate live retrieval.
+                  </p>
                 </div>
+              ) : (
+                <div className="border border-slate-200 dark:border-slate-800 rounded-xl overflow-hidden">
+                  <table className="w-full text-left text-xs">
+                    <thead className="bg-slate-50 dark:bg-slate-950/80 border-b border-slate-200 dark:border-slate-800 text-[10px] font-bold uppercase tracking-wider text-slate-500">
+                      <tr>
+                        <th className="py-2.5 px-3">Period</th>
+                        <th className="py-2.5 px-3">Doc No & SRO</th>
+                        <th className="py-2.5 px-3">Nature of Deed</th>
+                        <th className="py-2.5 px-3">Parties</th>
+                        <th className="py-2.5 px-3">Finding</th>
+                        <th className="py-2.5 px-3 text-right">Action</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
+                      {currentCase.ecRecords.map((rec) => (
+                        <tr key={rec.id} className="hover:bg-slate-50/60 dark:hover:bg-slate-800/40">
+                          <td className="py-3 px-3 font-mono font-semibold">{rec.period}</td>
+                          <td className="py-3 px-3">
+                            <span className="font-bold text-blue-700 dark:text-blue-400 font-mono">{rec.docNumber}</span>
+                            <span className="block text-[10px] text-slate-500">{rec.sro}</span>
+                          </td>
+                          <td className="py-3 px-3 font-medium">{rec.natureOfDeed}</td>
+                          <td className="py-3 px-3 text-[11px] text-slate-600 dark:text-slate-400 max-w-[180px] truncate">
+                            {rec.parties}
+                          </td>
+                          <td className="py-3 px-3">
+                            <span className="inline-flex items-center gap-1 text-[11px] font-semibold text-emerald-700 dark:text-emerald-400">
+                              <CheckCircle2 className="w-3 h-3" />
+                              <span>Clear</span>
+                            </span>
+                          </td>
+                          <td className="py-3 px-3 text-right">
+                            <button
+                              onClick={() => handleDeleteEcRecord(rec.id)}
+                              className="p-1 text-slate-400 hover:text-rose-600 transition"
+                              title="Delete record"
+                            >
+                              <Trash2 className="w-3.5 h-3.5" />
+                            </button>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* ======================================================================= */}
+          {/* TAB 3: MODULE 4B – PARENT TITLE CHAIN (DEVOLUTION TREE)                  */}
+          {/* ======================================================================= */}
+          {activeTab === 'parent' && (
+            <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-6 space-y-5 shadow-xs">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-100 dark:border-slate-800 pb-4">
                 <div>
-                  <div className="text-xs font-extrabold text-slate-900 dark:text-white">
-                    Advocate A.K. Saravanan (M.E. Energy, LLB)
-                  </div>
-                  <div className="text-[10px] text-slate-500 font-mono">
-                    Digitally Sealed & Certified • Enrollment: MS/1245/2005
-                  </div>
+                  <h2 className="text-base font-bold text-slate-900 dark:text-white">
+                    Module 4B: Parent Title Deeds & Devolution Tree
+                  </h2>
+                  <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
+                    Traces title continuity from the root vendor across partitions, settlements, and registered sale deeds.
+                  </p>
                 </div>
-              </div>
 
-              <div className="flex items-center gap-2">
                 <button
                   type="button"
-                  onClick={() => window.print()}
-                  className="px-4 py-2 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs flex items-center gap-2 shadow-xs cursor-pointer"
+                  onClick={openParentModal}
+                  className="px-3.5 py-1.5 rounded-lg bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs transition shadow-xs flex items-center gap-1.5 self-start sm:self-auto"
                 >
-                  <Printer className="w-3.5 h-3.5" />
-                  <span>Download / Print Certified Opinion</span>
+                  <Plus className="w-3.5 h-3.5" />
+                  <span>Add Parent Deed</span>
+                </button>
+              </div>
+
+              {currentCase.parentDocs.length === 0 ? (
+                <div className="p-8 text-center border-2 border-dashed border-slate-200 dark:border-slate-800 rounded-xl space-y-2">
+                  <Layers className="w-8 h-8 text-slate-400 mx-auto" />
+                  <div className="font-bold text-xs text-slate-700 dark:text-slate-300">No Parent Deeds Added</div>
+                  <p className="text-[11px] text-slate-500 max-w-sm mx-auto">
+                    Add prior registered link deeds to establish unbroken devolution under Tamil Nadu property law.
+                  </p>
+                </div>
+              ) : (
+                <div className="space-y-3">
+                  {currentCase.parentDocs.map((p, idx) => (
+                    <div key={p.id} className="p-4 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-950/40 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                      <div className="space-y-1">
+                        <div className="flex items-center gap-2">
+                          <span className="w-5 h-5 rounded-full bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200 font-mono text-[10px] font-bold flex items-center justify-center">
+                            {idx + 1}
+                          </span>
+                          <span className="font-bold text-slate-900 dark:text-white text-xs">{p.deedType}</span>
+                          <span className="font-mono text-xs font-bold text-blue-700 dark:text-blue-400 bg-blue-50 dark:bg-blue-950 px-1.5 py-0.2 rounded border border-blue-200 dark:border-blue-800">
+                            Doc: {p.docNumber} ({p.year})
+                          </span>
+                        </div>
+                        <div className="text-xs text-slate-600 dark:text-slate-400">
+                          <strong>{p.executants}</strong> &rarr; <strong>{p.claimants}</strong>
+                        </div>
+                        <div className="text-[11px] text-slate-500">
+                          Extent: {p.extent} • Schedule Match: {p.scheduleMatches ? '✓ Verified Matching' : '⚠️ Discrepancy'}
+                        </div>
+                      </div>
+
+                      <div className="flex items-center gap-2 self-start sm:self-auto">
+                        <span className="px-2.5 py-1 rounded text-[11px] font-bold bg-emerald-50 text-emerald-700 border border-emerald-200 dark:bg-emerald-950 dark:text-emerald-300">
+                          Devolution Clear ✓
+                        </span>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* ======================================================================= */}
+          {/* TAB 4: MODULE 4C – REVENUE RECORDS (PATTA / CHITTA / FMB)                */}
+          {/* ======================================================================= */}
+          {activeTab === 'current' && (
+            <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-6 space-y-6 shadow-xs">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-100 dark:border-slate-800 pb-4">
+                <div>
+                  <h2 className="text-base font-bold text-slate-900 dark:text-white">
+                    Module 4C: Revenue Record Verification & FMB Blueprint
+                  </h2>
+                  <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
+                    Cross-checks vendor Patta passbook, Chitta adangal extract, and Field Measurement Book (FMB) survey sketch.
+                  </p>
+                </div>
+
+                <div className="flex items-center gap-2">
+                  <button
+                    type="button"
+                    onClick={() => openGovRevenueModal('PATTA')}
+                    className="px-3 py-1.5 rounded-lg border border-blue-200 dark:border-blue-800 bg-blue-50 dark:bg-blue-950/60 text-blue-700 dark:text-blue-300 text-xs font-bold transition flex items-center gap-1"
+                  >
+                    <Sparkles className="w-3.5 h-3.5" />
+                    <span>e-Patta Auto-Fetch</span>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => openGovRevenueModal('FMB')}
+                    className="px-3 py-1.5 rounded-lg border border-blue-200 dark:border-blue-800 bg-blue-50 dark:bg-blue-950/60 text-blue-700 dark:text-blue-300 text-xs font-bold transition flex items-center gap-1"
+                  >
+                    <Sparkles className="w-3.5 h-3.5" />
+                    <span>FMB Sketch Fetch</span>
+                  </button>
+                </div>
+              </div>
+
+              {/* Revenue Verification Cards */}
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                {/* Patta Card */}
+                <div className="p-4 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-950/40 space-y-2">
+                  <div className="flex items-center justify-between">
+                    <span className="text-[10px] font-bold text-slate-400 uppercase">Computerized e-Patta</span>
+                    <CheckCircle2 className="w-4 h-4 text-emerald-600" />
+                  </div>
+                  <div className="font-bold text-sm text-slate-900 dark:text-white">
+                    {currentCase.currentDoc.pattaNumber}
+                  </div>
+                  <div className="text-[11px] text-slate-500">
+                    Holder: <strong>{currentCase.currentDoc.pattaHolder}</strong>
+                  </div>
+                  <div className="pt-1">
+                    <label className="text-[10px] text-blue-600 hover:underline cursor-pointer font-bold block">
+                      <input
+                        type="file"
+                        className="hidden"
+                        accept="application/pdf,image/*"
+                        onChange={(e) => {
+                          if (e.target.files?.[0]) handleRevenueUpload(e.target.files[0], 'PATTA');
+                        }}
+                      />
+                      <span>{pattaUploading ? 'Uploading...' : 'Upload Patta PDF →'}</span>
+                    </label>
+                  </div>
+                </div>
+
+                {/* Chitta Card */}
+                <div className="p-4 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-950/40 space-y-2">
+                  <div className="flex items-center justify-between">
+                    <span className="text-[10px] font-bold text-slate-400 uppercase">Chitta / Adangal Extract</span>
+                    <CheckCircle2 className="w-4 h-4 text-emerald-600" />
+                  </div>
+                  <div className="font-bold text-sm text-slate-900 dark:text-white">
+                    {currentCase.currentDoc.chittaVerified ? 'Verified Clear' : 'Pending Check'}
+                  </div>
+                  <div className="text-[11px] text-slate-500">
+                    Classification: Ryotwari Dry Land
+                  </div>
+                  <div className="pt-1">
+                    <label className="text-[10px] text-blue-600 hover:underline cursor-pointer font-bold block">
+                      <input
+                        type="file"
+                        className="hidden"
+                        accept="application/pdf,image/*"
+                        onChange={(e) => {
+                          if (e.target.files?.[0]) handleRevenueUpload(e.target.files[0], 'CHITTA');
+                        }}
+                      />
+                      <span>{chittaUploading ? 'Uploading...' : 'Upload Chitta Extract →'}</span>
+                    </label>
+                  </div>
+                </div>
+
+                {/* FMB Sketch Card */}
+                <div className="p-4 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-950/40 space-y-2">
+                  <div className="flex items-center justify-between">
+                    <span className="text-[10px] font-bold text-slate-400 uppercase">FMB Survey Sketch</span>
+                    <CheckCircle2 className="w-4 h-4 text-emerald-600" />
+                  </div>
+                  <div className="font-bold text-sm text-slate-900 dark:text-white">
+                    {currentCase.currentDoc.fmbVerified ? 'Demarcated & Clear' : 'Pending Verification'}
+                  </div>
+                  <div className="text-[11px] text-slate-500">
+                    Traverse G-Line: 72.1 ft
+                  </div>
+                  <div className="pt-1">
+                    <label className="text-[10px] text-blue-600 hover:underline cursor-pointer font-bold block">
+                      <input
+                        type="file"
+                        className="hidden"
+                        accept="application/pdf,image/*"
+                        onChange={(e) => {
+                          if (e.target.files?.[0]) handleRevenueUpload(e.target.files[0], 'FMB');
+                        }}
+                      />
+                      <span>{fmbUploading ? 'Uploading...' : 'Upload FMB Sketch →'}</span>
+                    </label>
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* ======================================================================= */}
+          {/* TAB 5: MODULE 4D – ADVOCATE OPINION SIGN-OFF & CERTIFICATION              */}
+          {/* ======================================================================= */}
+          {activeTab === 'opinion' && (
+            <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-6 sm:p-8 space-y-6 shadow-xs">
+              
+              {/* Official Bar Council Advocate Letterhead Card */}
+              <div className="border border-slate-200 dark:border-slate-800 rounded-2xl p-6 bg-slate-50/50 dark:bg-slate-950/40 space-y-5">
+                <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-4 border-b border-slate-200 dark:border-slate-800 pb-5">
+                  <div className="space-y-1">
+                    <span className="text-[10px] font-bold uppercase tracking-wider text-blue-700 dark:text-blue-400 block">
+                      Bar Council of Tamil Nadu & Puducherry
+                    </span>
+                    <h3 className="text-xl font-black text-slate-900 dark:text-white">
+                      Advocate A.K. Saravanan, B.E., LLB
+                    </h3>
+                    <p className="text-xs text-slate-600 dark:text-slate-400">
+                      Advocate • Enrollment No: <strong className="text-slate-900 dark:text-white font-mono">MS/1245/2005</strong>
+                    </p>
+                    <p className="text-[11px] text-slate-500">
+                      Legal Chambers: 77, Lawyers Chamber, Combined Court Complex, Coimbatore - 641018
+                    </p>
+                  </div>
+
+                  <div className="text-right sm:self-start">
+                    <span className="inline-block px-3 py-1 rounded-full text-xs font-black bg-emerald-50 text-emerald-700 border border-emerald-200 dark:bg-emerald-950 dark:text-emerald-400 dark:border-emerald-800 shadow-xs">
+                      CERTIFIED TITLE OPINION ✓
+                    </span>
+                    <span className="block text-[10px] text-slate-400 font-mono mt-1">
+                      Docket Ref: {currentCase.id}
+                    </span>
+                  </div>
+                </div>
+
+                {/* Opinion Verdict Banner */}
+                <div className="p-4 rounded-xl bg-emerald-500/10 border border-emerald-200 dark:border-emerald-500/20 flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs">
+                  <div className="space-y-1">
+                    <span className="font-extrabold text-sm text-emerald-800 dark:text-emerald-300 flex items-center gap-1.5">
+                      <CheckCircle2 className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
+                      Title Scrutiny Finding: Clear, Marketable & Unencumbered Title
+                    </span>
+                    <p className="text-[11px] text-slate-600 dark:text-slate-400">
+                      Root of title verified unbroken for 30+ years with complete revenue Patta mutation and nil encumbrances.
+                    </p>
+                  </div>
+                  <span className="px-3 py-1.5 rounded-lg bg-emerald-600 text-white font-bold text-xs shrink-0 self-start sm:self-auto shadow-xs">
+                    Stage 6 Certified
+                  </span>
+                </div>
+
+                {/* Findings List */}
+                <div className="space-y-2">
+                  <span className="text-xs font-bold text-slate-900 dark:text-white uppercase tracking-wider block">
+                    Primary Scrutiny Observations & Title Trace:
+                  </span>
+                  <div className="space-y-1.5">
+                    {currentCase.legalOpinion.keyFindings.map((finding, idx) => (
+                      <div key={idx} className="flex items-start gap-2.5 text-xs text-slate-700 dark:text-slate-300">
+                        <span className="w-1.5 h-1.5 rounded-full bg-blue-600 dark:bg-blue-400 mt-1.5 shrink-0" />
+                        <span>{finding}</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Recommendations */}
+                <div className="p-4 rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 space-y-2 text-xs">
+                  <span className="font-bold text-slate-900 dark:text-white uppercase tracking-wider block">
+                    Conditions Precedent Prior to Registration:
+                  </span>
+                  <ul className="space-y-1 text-slate-600 dark:text-slate-300 list-disc list-inside">
+                    {currentCase.legalOpinion.recommendations.map((rec, i) => (
+                      <li key={i}>{rec}</li>
+                    ))}
+                  </ul>
+                </div>
+
+                {/* Signature Block */}
+                <div className="pt-4 border-t border-slate-200 dark:border-slate-800 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                  <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 rounded-xl bg-blue-50 text-blue-700 border border-blue-200 flex items-center justify-center font-bold">
+                      AK
+                    </div>
+                    <div>
+                      <div className="text-xs font-extrabold text-slate-900 dark:text-white">
+                        Advocate A.K. Saravanan (B.E., LLB)
+                      </div>
+                      <div className="text-[10px] text-slate-500 font-mono">
+                        Digitally Sealed & Certified • Enrollment: MS/1245/2005
+                      </div>
+                    </div>
+                  </div>
+
+                  <button
+                    type="button"
+                    onClick={() => window.print()}
+                    className="px-4 py-2 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs flex items-center gap-2 shadow-xs cursor-pointer"
+                  >
+                    <Printer className="w-3.5 h-3.5" />
+                    <span>Download / Print Certified Opinion</span>
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
+
+        </div>
+
+        {/* ======================================================================= */}
+        {/* RIGHT PANE (35% - 4 Cols): STICKY LEGAL ASSISTANT DESK                   */}
+        {/* ======================================================================= */}
+        <div className="lg:col-span-4 space-y-5 lg:sticky lg:top-6">
+          
+          {/* CARD 1: SOP MILESTONE READINESS METER */}
+          <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-5 shadow-xs space-y-3">
+            <div className="flex items-center justify-between">
+              <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400">Readiness Checklist</span>
+              <span className="font-mono text-xs font-bold text-blue-600 dark:text-blue-400">
+                {isGate4Unlocked ? '4 of 5 Ready' : '2 of 5 Ready'}
+              </span>
+            </div>
+
+            <div className="space-y-2 text-xs">
+              <div className="flex items-center justify-between p-2 rounded-lg bg-slate-50 dark:bg-slate-950/60 border border-slate-100 dark:border-slate-800">
+                <span className="flex items-center gap-2">
+                  <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />
+                  <span>Enquiry & Discovery Call</span>
+                </span>
+                <span className="text-[10px] font-bold text-emerald-700">Stage 1-2 ✓</span>
+              </div>
+
+              <div className="flex items-center justify-between p-2 rounded-lg bg-slate-50 dark:bg-slate-950/60 border border-slate-100 dark:border-slate-800">
+                <span className="flex items-center gap-2">
+                  {welcomeLetter?.sent_status === 'sent' && currentCase.advancePaid ? (
+                    <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />
+                  ) : (
+                    <Clock className="w-3.5 h-3.5 text-amber-600" />
+                  )}
+                  <span>Welcome Letter & 80% Advance</span>
+                </span>
+                <span className={`text-[10px] font-bold ${
+                  welcomeLetter?.sent_status === 'sent' && currentCase.advancePaid ? 'text-emerald-700' : 'text-amber-700'
+                }`}>
+                  {welcomeLetter?.sent_status === 'sent' && currentCase.advancePaid ? 'Gate 4 Clear ✓' : 'Gate 4 Pending'}
+                </span>
+              </div>
+
+              <div className="flex items-center justify-between p-2 rounded-lg bg-slate-50 dark:bg-slate-950/60 border border-slate-100 dark:border-slate-800">
+                <span className="flex items-center gap-2">
+                  {currentCase.ecRecords.length > 0 ? (
+                    <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />
+                  ) : (
+                    <Clock className="w-3.5 h-3.5 text-slate-400" />
+                  )}
+                  <span>30-Year EC Indexing</span>
+                </span>
+                <span className="text-[10px] font-bold text-slate-600">
+                  {currentCase.ecRecords.length} records
+                </span>
+              </div>
+
+              <div className="flex items-center justify-between p-2 rounded-lg bg-slate-50 dark:bg-slate-950/60 border border-slate-100 dark:border-slate-800">
+                <span className="flex items-center gap-2">
+                  {currentCase.parentDocs.length > 0 ? (
+                    <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />
+                  ) : (
+                    <Clock className="w-3.5 h-3.5 text-slate-400" />
+                  )}
+                  <span>Parent Title Devolution</span>
+                </span>
+                <span className="text-[10px] font-bold text-slate-600">
+                  {currentCase.parentDocs.length} deeds
+                </span>
+              </div>
+
+              <div className="flex items-center justify-between p-2 rounded-lg bg-slate-50 dark:bg-slate-950/60 border border-slate-100 dark:border-slate-800">
+                <span className="flex items-center gap-2">
+                  {currentCase.legalOpinion.advocateSignoff ? (
+                    <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />
+                  ) : (
+                    <Clock className="w-3.5 h-3.5 text-purple-600" />
+                  )}
+                  <span>Advocate Digital Seal</span>
+                </span>
+                <span className="text-[10px] font-bold text-purple-700">MS/1245</span>
+              </div>
+            </div>
+          </div>
+
+          {/* CARD 2: STICKY EVIDENCE VAULT INSPECTOR */}
+          <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-5 shadow-xs space-y-3">
+            <div className="flex items-center justify-between">
+              <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400 flex items-center gap-1.5">
+                <FileBox className="w-3.5 h-3.5 text-blue-600" />
+                <span>Evidence Vault Inspector</span>
+              </span>
+              <span className="text-[10px] font-mono font-bold text-slate-500">Cloudflare R2</span>
+            </div>
+
+            <div className="space-y-2 text-xs">
+              <div className="p-2.5 rounded-lg border border-slate-100 dark:border-slate-800 bg-slate-50 dark:bg-slate-950/40 flex items-center justify-between">
+                <div>
+                  <div className="font-semibold text-slate-900 dark:text-white truncate max-w-[170px]">
+                    Vendor_Sale_Deed_2012.pdf
+                  </div>
+                  <div className="text-[10px] text-slate-400">Registered Sale Deed • 2.4 MB</div>
+                </div>
+                <button
+                  onClick={() => alert('Opening evidentiary document preview in secure sandbox.')}
+                  className="p-1 rounded text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-950"
+                  title="Inspect document"
+                >
+                  <Eye className="w-4 h-4" />
+                </button>
+              </div>
+
+              <div className="p-2.5 rounded-lg border border-slate-100 dark:border-slate-800 bg-slate-50 dark:bg-slate-950/40 flex items-center justify-between">
+                <div>
+                  <div className="font-semibold text-slate-900 dark:text-white truncate max-w-[170px]">
+                    EC_1994_2026_Certified.pdf
+                  </div>
+                  <div className="text-[10px] text-slate-400">Form 15 Search • 1.8 MB</div>
+                </div>
+                <button
+                  onClick={() => alert('Opening evidentiary document preview in secure sandbox.')}
+                  className="p-1 rounded text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-950"
+                  title="Inspect document"
+                >
+                  <Eye className="w-4 h-4" />
+                </button>
+              </div>
+
+              <div className="p-2.5 rounded-lg border border-slate-100 dark:border-slate-800 bg-slate-50 dark:bg-slate-950/40 flex items-center justify-between">
+                <div>
+                  <div className="font-semibold text-slate-900 dark:text-white truncate max-w-[170px]">
+                    Patta_Passbook_eServices.pdf
+                  </div>
+                  <div className="text-[10px] text-slate-400">TNeGA Revenue Passbook • 650 KB</div>
+                </div>
+                <button
+                  onClick={() => alert('Opening evidentiary document preview in secure sandbox.')}
+                  className="p-1 rounded text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-950"
+                  title="Inspect document"
+                >
+                  <Eye className="w-4 h-4" />
                 </button>
               </div>
             </div>
           </div>
+
+          {/* CARD 3: QUICK DOCUMENT DROPZONE */}
+          <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-5 shadow-xs space-y-3">
+            <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400 block">
+              Quick Document Dropzone
+            </span>
+            <label className="border-2 border-dashed border-slate-200 dark:border-slate-700 hover:border-blue-500 dark:hover:border-blue-400 rounded-xl p-4 text-center cursor-pointer block transition bg-slate-50/50 dark:bg-slate-950/30">
+              <Upload className="w-5 h-5 text-slate-400 mx-auto" />
+              <div className="text-xs font-semibold text-slate-700 dark:text-slate-300 mt-1">
+                Drop PDF / Scan files here
+              </div>
+              <div className="text-[10px] text-slate-400 mt-0.5">
+                Automatically stored in Cloudflare R2 Vault
+              </div>
+              <input
+                type="file"
+                className="hidden"
+                accept="application/pdf,image/*"
+                onChange={(e) => {
+                  if (e.target.files?.[0]) {
+                    setToastNotice({
+                      type: 'success',
+                      message: `✓ Uploaded ${e.target.files[0].name} to case evidentiary vault!`,
+                    });
+                  }
+                }}
+              />
+            </label>
+          </div>
+
         </div>
-      )}
+
+      </div>
 
       {/* ========================================================================= */}
-      {/* MODAL 1: ADD EC RECORD (DYNAMIC METADATA DRIVEN + AUTOMATION READY)       */}
+      {/* MODAL 1: ADD EC RECORD (DYNAMIC METADATA DRIVEN)                          */}
       {/* ========================================================================= */}
       {showEcModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/40 dark:bg-slate-950/80 backdrop-blur-xs overflow-y-auto">
@@ -1789,467 +2168,171 @@ export default function JobCardPage({ params }: { params: Promise<{ id: string }
                 </div>
               </div>
               <button
-                onClick={() => {
-                  setShowEcModal(false);
-                  setModalError(null);
-                }}
-                className="text-slate-400 hover:text-slate-700 dark:hover:text-white p-1 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800"
+                onClick={() => { setShowEcModal(false); setModalError(null); }}
+                className="text-slate-400 hover:text-slate-700 dark:hover:text-white p-1 rounded-lg"
               >
                 <X className="w-5 h-5" />
               </button>
             </div>
 
-            {/* Government Automation Banner */}
-            <div className="p-3.5 rounded-xl bg-blue-50 dark:bg-blue-950/40 border border-blue-200 dark:border-blue-800/60 flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs">
-              <div>
-                <span className="font-bold text-blue-800 dark:text-blue-300 flex items-center gap-1.5">
-                  <Sparkles className="w-3.5 h-3.5 text-blue-600 dark:text-blue-400" />
-                  Government Automation (TNReginet / Kaveri)
-                </span>
-                <p className="text-[11px] text-slate-600 dark:text-slate-400 mt-0.5">
-                  Auto-fetch inspector general registration data by SRO &amp; Survey No.
-                </p>
+            {modalError && (
+              <div className="p-3 bg-rose-50 border border-rose-200 text-rose-700 rounded-xl text-xs flex items-center gap-2">
+                <AlertCircle className="w-4 h-4 shrink-0" />
+                <span>{modalError}</span>
               </div>
-              <button
-                type="button"
-                onClick={handleAutoFetchTNReginet}
-                disabled={submitting}
-                className="px-3 py-1.5 rounded-lg bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs transition flex items-center gap-1.5 shrink-0 cursor-pointer shadow-xs"
-              >
-                <RefreshCw className={`w-3.5 h-3.5 ${submitting ? 'animate-spin' : ''}`} />
-                <span>Simulate TNReginet Fetch</span>
-              </button>
-            </div>
+            )}
 
             <DynamicFormRenderer
               schema={ecMetadata}
               initialValues={ecInitialValues}
               onSubmit={handleSaveEcRecordDynamic}
               onCancel={() => setShowEcModal(false)}
-              submitButtonText="Validate & Save EC Record"
               isSubmitting={submitting}
+              submitButtonText="Save EC Record to Database"
             />
           </div>
         </div>
       )}
 
       {/* ========================================================================= */}
-      {/* MODAL 2: ADD PARENT DOCUMENT (DYNAMIC METADATA DRIVEN + TITLE CHAIN)      */}
+      {/* MODAL 2: ADD PARENT DEED (DYNAMIC METADATA DRIVEN)                        */}
       {/* ========================================================================= */}
       {showParentModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/40 dark:bg-slate-950/80 backdrop-blur-xs overflow-y-auto">
           <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl w-full max-w-2xl p-6 shadow-2xl space-y-5 my-8 max-h-[90vh] overflow-y-auto">
             <div className="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-3">
               <div className="flex items-center gap-2">
-                <FileText className="w-5 h-5 text-blue-600 dark:text-blue-400" />
+                <Layers className="w-5 h-5 text-blue-600 dark:text-blue-400" />
                 <div>
                   <h3 className="font-bold text-base text-slate-900 dark:text-white">{parentMetadata.displayName}</h3>
                   <span className="text-[10px] text-blue-600 dark:text-blue-400 font-mono">Dynamic Schema v{parentMetadata.version || 1} • Cloudflare D1</span>
                 </div>
               </div>
               <button
-                onClick={() => {
-                  setShowParentModal(false);
-                  setModalError(null);
-                }}
-                className="text-slate-400 hover:text-slate-700 dark:hover:text-white p-1 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800"
+                onClick={() => { setShowParentModal(false); setModalError(null); }}
+                className="text-slate-400 hover:text-slate-700 dark:hover:text-white p-1 rounded-lg"
               >
                 <X className="w-5 h-5" />
               </button>
             </div>
+
+            {modalError && (
+              <div className="p-3 bg-rose-50 border border-rose-200 text-rose-700 rounded-xl text-xs flex items-center gap-2">
+                <AlertCircle className="w-4 h-4 shrink-0" />
+                <span>{modalError}</span>
+              </div>
+            )}
 
             <DynamicFormRenderer
               schema={parentMetadata}
               initialValues={parentInitialValues}
               onSubmit={handleSaveParentDocDynamic}
               onCancel={() => setShowParentModal(false)}
-              submitButtonText="Save Parent Deed to Title Chain"
               isSubmitting={submitting}
+              submitButtonText="Save Parent Deed to Title Chain"
             />
           </div>
         </div>
       )}
 
       {/* ========================================================================= */}
-      {/* MODAL 3: GOVERNMENT e-SERVICES (PATTA / FMB) AUTO-FETCH & VALIDATE        */}
+      {/* MODAL 3: GOVERNMENT E-SERVICES AUTO-FETCH (PATTA / FMB)                   */}
       {/* ========================================================================= */}
       {showGovRevenueModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/40 dark:bg-slate-950/85 backdrop-blur-xs overflow-y-auto">
-          <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700/80 rounded-2xl w-full max-w-3xl p-6 shadow-2xl space-y-5 my-8">
-            {/* Modal Header */}
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/40 dark:bg-slate-950/80 backdrop-blur-xs overflow-y-auto">
+          <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl w-full max-w-xl p-6 shadow-2xl space-y-5 my-8">
             <div className="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-3">
-              <div className="flex items-center gap-2.5">
-                <div className="p-2 rounded-xl bg-blue-50 border border-blue-200 text-blue-600 dark:bg-blue-500/10 dark:border-blue-500/20 dark:text-blue-400">
-                  {govRevenueType === 'PATTA' ? <FileCheck className="w-5 h-5" /> : <Layers className="w-5 h-5" />}
-                </div>
+              <div className="flex items-center gap-2">
+                <Building2 className="w-5 h-5 text-blue-600" />
                 <div>
-                  <div className="flex items-center gap-2">
-                    <h3 className="font-bold text-base text-slate-900 dark:text-white">
-                      {govRevenueType === 'PATTA'
-                        ? 'Tamil Nadu e-Services — Patta / Chitta Extraction'
-                        : 'Tamil Nadu e-Services — Field Measurement Book (FMB)'}
-                    </h3>
-                    <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200 dark:bg-emerald-500/10 dark:text-emerald-400 dark:border-emerald-500/20">
-                      eservices.tn.gov.in
-                    </span>
-                  </div>
-                  <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
-                    {govRevenueType === 'PATTA'
-                      ? 'Fetch digital "A" Register & Chitta extract directly from Revenue Department database.'
-                      : 'Fetch official Field Measurement Book (FMB) survey sketch & boundary demarcation.'}
-                  </p>
+                  <h3 className="font-bold text-base text-slate-900 dark:text-white">
+                    Fetch {govRevenueType === 'PATTA' ? 'e-Patta Extract' : 'FMB Sketch'}
+                  </h3>
+                  <span className="text-[10px] text-blue-600 font-mono">Tamil Nadu e-Services (eservices.tn.gov.in)</span>
                 </div>
               </div>
               <button
                 onClick={() => setShowGovRevenueModal(false)}
-                className="text-slate-400 hover:text-slate-700 dark:hover:text-white p-1 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 transition"
+                className="text-slate-400 hover:text-slate-700 dark:hover:text-white p-1"
               >
                 <X className="w-5 h-5" />
               </button>
             </div>
 
-            {/* Department Source Badge Banner */}
-            <div className="p-3.5 rounded-xl bg-gradient-to-r from-blue-50 via-slate-50 to-blue-50/50 dark:from-blue-950/60 dark:via-slate-900 dark:to-slate-950 border border-blue-200 dark:border-blue-800/50 flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs">
-              <div className="space-y-0.5">
-                <span className="font-bold text-blue-800 dark:text-blue-300 flex items-center gap-1.5">
-                  <Sparkles className="w-4 h-4 text-blue-600 dark:text-blue-400" />
-                  Directorate of Survey and Settlement • Government of Tamil Nadu
-                </span>
-                <p className="text-[11px] text-slate-600 dark:text-slate-400">
-                  Target Endpoint: <span className="text-blue-700 dark:text-blue-300 font-mono">eservices.tn.gov.in/eservicesnew/{govRevenueType === 'PATTA' ? 'land/chitta.html' : 'land/fmb.html'}</span>
-                </p>
-              </div>
-              <div className="flex items-center gap-2 shrink-0">
-                <button
-                  type="button"
-                  onClick={() => {
-                    setGovRevenueType('PATTA');
-                    setGovFetchedData(null);
-                  }}
-                  className={`px-3 py-1.5 rounded-lg text-xs font-bold transition ${
-                    govRevenueType === 'PATTA'
-                      ? 'bg-blue-600 text-white shadow-xs'
-                      : 'bg-white dark:bg-slate-800 text-slate-600 dark:text-slate-400 hover:text-slate-900 border border-slate-200 dark:border-slate-700'
-                  }`}
-                >
-                  Patta / Chitta
-                </button>
-                <button
-                  type="button"
-                  onClick={() => {
-                    setGovRevenueType('FMB');
-                    setGovFetchedData(null);
-                  }}
-                  className={`px-3 py-1.5 rounded-lg text-xs font-bold transition ${
-                    govRevenueType === 'FMB'
-                      ? 'bg-blue-600 text-white shadow-xs'
-                      : 'bg-white dark:bg-slate-800 text-slate-600 dark:text-slate-400 hover:text-slate-900 border border-slate-200 dark:border-slate-700'
-                  }`}
-                >
-                  FMB Sketch
-                </button>
-              </div>
-            </div>
-
-            {/* Input Search Form */}
-            <div className="grid grid-cols-1 sm:grid-cols-5 gap-3 text-xs">
+            <div className="grid grid-cols-2 gap-3 text-xs">
               <div>
-                <label className="block font-medium text-slate-700 dark:text-slate-300 mb-1">மாவட்டம் / District *</label>
-                <select
+                <label className="text-[10px] font-bold text-slate-500 uppercase block mb-1">District</label>
+                <input
+                  type="text"
                   value={govRevenueForm.district}
                   onChange={(e) => setGovRevenueForm({ ...govRevenueForm, district: e.target.value })}
-                  className="w-full bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-700 rounded-xl px-3 py-2 text-slate-900 dark:text-white focus:outline-none focus:border-blue-500 shadow-xs"
-                >
-                  <option value="Chennai">Chennai (சென்னை)</option>
-                  <option value="Chengalpattu">Chengalpattu (செங்கல்பட்டு)</option>
-                  <option value="Kanchipuram">Kanchipuram (காஞ்சிபுரம்)</option>
-                  <option value="Tiruvallur">Tiruvallur (திருவள்ளூர்)</option>
-                  <option value="Coimbatore">Coimbatore (கோயம்புத்தூர்)</option>
-                  <option value="Madurai">Madurai (மதுரை)</option>
-                  <option value="Tiruchirappalli">Tiruchirappalli (திருச்சிராப்பள்ளி)</option>
-                  <option value="Salem">Salem (சேலம்)</option>
-                  <option value="Tiruppur">Tiruppur (திருப்பூர்)</option>
-                  <option value="Erode">Erode (ஈரோடு)</option>
-                  <option value="Vellore">Vellore (வேலூர்)</option>
-                </select>
+                  className="w-full p-2 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900"
+                />
               </div>
-
               <div>
-                <label className="block font-medium text-slate-700 dark:text-slate-300 mb-1">வட்டம் / Taluk *</label>
+                <label className="text-[10px] font-bold text-slate-500 uppercase block mb-1">Taluk</label>
                 <input
                   type="text"
-                  required
-                  placeholder="e.g. Alandur"
                   value={govRevenueForm.taluk}
                   onChange={(e) => setGovRevenueForm({ ...govRevenueForm, taluk: e.target.value })}
-                  className="w-full bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-700 rounded-xl px-3 py-2 text-slate-900 dark:text-white focus:outline-none focus:border-blue-500 shadow-xs"
+                  className="w-full p-2 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900"
                 />
               </div>
-
               <div>
-                <label className="block font-medium text-slate-700 dark:text-slate-300 mb-1">கிராமம் / Village *</label>
+                <label className="text-[10px] font-bold text-slate-500 uppercase block mb-1">Survey Number</label>
                 <input
                   type="text"
-                  required
-                  placeholder="e.g. St. Thomas Mount"
-                  value={govRevenueForm.village}
-                  onChange={(e) => setGovRevenueForm({ ...govRevenueForm, village: e.target.value })}
-                  className="w-full bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-700 rounded-xl px-3 py-2 text-slate-900 dark:text-white focus:outline-none focus:border-blue-500 shadow-xs"
-                />
-              </div>
-
-              <div>
-                <label className="block font-medium text-slate-700 dark:text-slate-300 mb-1">புல எண் / Survey *</label>
-                <input
-                  type="text"
-                  required
-                  placeholder="e.g. 428"
                   value={govRevenueForm.surveyNumber}
                   onChange={(e) => setGovRevenueForm({ ...govRevenueForm, surveyNumber: e.target.value })}
-                  className="w-full bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-700 rounded-xl px-3 py-2 text-slate-900 dark:text-white focus:outline-none focus:border-blue-500 font-mono shadow-xs"
+                  className="w-full p-2 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900"
                 />
               </div>
-
               <div>
-                <label className="block font-medium text-slate-700 dark:text-slate-300 mb-1">உட்பிரிவு / Sub-Div *</label>
+                <label className="text-[10px] font-bold text-slate-500 uppercase block mb-1">Subdivision</label>
                 <input
                   type="text"
-                  required
-                  placeholder="e.g. 1"
                   value={govRevenueForm.subdivision}
                   onChange={(e) => setGovRevenueForm({ ...govRevenueForm, subdivision: e.target.value })}
-                  className="w-full bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-700 rounded-xl px-3 py-2 text-slate-900 dark:text-white focus:outline-none focus:border-blue-500 font-mono shadow-xs"
+                  className="w-full p-2 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900"
                 />
               </div>
             </div>
 
-            {/* Fetch Trigger Button */}
-            <div className="flex justify-center">
-              <button
-                type="button"
-                onClick={handleSimulateGovRevenueFetch}
-                disabled={govFetching}
-                className="px-6 py-2.5 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs flex items-center gap-2 shadow-xs disabled:opacity-50 transition"
-              >
-                <RefreshCw className={`w-4 h-4 ${govFetching ? 'animate-spin' : ''}`} />
-                <span>
-                  {govFetching
-                    ? 'Connecting to Tamil Nadu e-Services Gateway...'
-                    : `Fetch Official ${govRevenueType === 'PATTA' ? 'Patta/Chitta Extract' : 'FMB Boundary Sketch'}`}
-                </span>
-              </button>
-            </div>
+            <button
+              type="button"
+              onClick={handleSimulateGovRevenueFetch}
+              disabled={govFetching}
+              className="w-full py-2.5 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs transition shadow-xs flex items-center justify-center gap-2 cursor-pointer"
+            >
+              {govFetching ? <RefreshCw className="w-4 h-4 animate-spin" /> : <Sparkles className="w-4 h-4" />}
+              <span>{govFetching ? 'Querying Government Land Registry...' : 'Query e-Services Portal'}</span>
+            </button>
 
-            {/* FETCHED RESULTS PREVIEW */}
             {govFetchedData && (
-              <div className="space-y-4 pt-2">
-                {govRevenueType === 'PATTA' ? (
-                  /* Official Tamil Nadu Digital Patta/Chitta Card */
-                  <div className="rounded-xl border border-emerald-300 dark:border-emerald-500/40 bg-emerald-50/20 dark:bg-slate-950 p-5 space-y-4 text-xs shadow-xs">
-                    <div className="text-center border-b border-emerald-100 dark:border-slate-800 pb-3 space-y-1">
-                      <div className="inline-block px-2.5 py-0.5 rounded-full bg-emerald-100 dark:bg-emerald-500/10 text-emerald-800 dark:text-emerald-400 font-bold text-[11px] border border-emerald-200 dark:border-emerald-500/30">
-                        தமிழ்நாடு அரசு - வருவாய்த்துறை • e-Chitta Extract
-                      </div>
-                      <h4 className="text-sm font-black text-slate-900 dark:text-white">
-                        நில உரிமை விபரங்கள் : 10(1) பிரிவு கிராமக் கணக்கு நகல் (இ-பட்டா)
-                      </h4>
-                      <p className="text-[11px] text-slate-500 dark:text-slate-400">
-                        Directorate of Land Administration, Government of Tamil Nadu
-                      </p>
-                    </div>
-
-                    <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 text-slate-700 dark:text-slate-300">
-                      <div className="p-2.5 rounded-lg bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800">
-                        <span className="text-[10px] text-slate-500 block uppercase font-medium">மாவட்டம் / District</span>
-                        <span className="font-bold text-slate-900 dark:text-white">{govFetchedData.district}</span>
-                      </div>
-                      <div className="p-2.5 rounded-lg bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800">
-                        <span className="text-[10px] text-slate-500 block uppercase font-medium">வட்டம் / Taluk</span>
-                        <span className="font-bold text-slate-900 dark:text-white">{govFetchedData.taluk}</span>
-                      </div>
-                      <div className="p-2.5 rounded-lg bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800">
-                        <span className="text-[10px] text-slate-500 block uppercase font-medium">கிராமம் / Village</span>
-                        <span className="font-bold text-slate-900 dark:text-white">{govFetchedData.village}</span>
-                      </div>
-                      <div className="p-2.5 rounded-lg bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800">
-                        <span className="text-[10px] text-slate-500 block uppercase font-medium">பட்டா எண் / Patta No</span>
-                        <span className="font-mono font-black text-emerald-700 dark:text-emerald-400">{govFetchedData.pattaNumber}</span>
-                      </div>
-                      <div className="p-2.5 rounded-lg bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800">
-                        <span className="text-[10px] text-slate-500 block uppercase font-medium">புல எண் / Survey & Sub-Div</span>
-                        <span className="font-mono font-bold text-blue-700 dark:text-amber-400">{govFetchedData.surveyNo}</span>
-                      </div>
-                      <div className="p-2.5 rounded-lg bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800">
-                        <span className="text-[10px] text-slate-500 block uppercase font-medium">நில உரிமைதாரர் / Patta Holder</span>
-                        <span className="font-bold text-slate-900 dark:text-white">{govFetchedData.pattaHolder}</span>
-                      </div>
-                      <div className="p-2.5 rounded-lg bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 sm:col-span-2">
-                        <span className="text-[10px] text-slate-500 block uppercase font-medium">நில வகைப்பாடு / Land Type</span>
-                        <span className="text-slate-800 dark:text-slate-200">{govFetchedData.landKind}</span>
-                      </div>
-                      <div className="p-2.5 rounded-lg bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800">
-                        <span className="text-[10px] text-slate-500 block uppercase font-medium">பரப்பளவு / Extent</span>
-                        <span className="font-bold text-slate-900 dark:text-white">{govFetchedData.extentAcreCents}</span>
-                      </div>
-                    </div>
-
-                    <div className="p-3 rounded-lg bg-emerald-100/50 dark:bg-emerald-950/30 border border-emerald-200 dark:border-emerald-800/40 flex items-center justify-between text-[11px]">
-                      <div className="space-y-0.5">
-                        <span className="text-emerald-800 dark:text-emerald-400 font-bold flex items-center gap-1">
-                          <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />
-                          {govFetchedData.digitalSign}
-                        </span>
-                        <span className="text-slate-600 dark:text-slate-400">
-                          Central e-Services Server Status: Record Verified Active (Fasli Year 1435) • Kist Paid
-                        </span>
-                      </div>
-                      <span className="px-2 py-1 rounded bg-emerald-100 dark:bg-emerald-500/20 text-emerald-800 dark:text-emerald-300 font-mono font-bold text-xs shrink-0">
-                        CERTIFIED CLEAR
-                      </span>
-                    </div>
-                  </div>
-                ) : (
-                  /* Official Tamil Nadu FMB Boundary Sketch Preview */
-                  <div className="rounded-xl border border-blue-200 dark:border-amber-500/40 bg-slate-50 dark:bg-slate-950 p-5 space-y-4 text-xs shadow-xs">
-                    <div className="text-center border-b border-slate-200 dark:border-slate-800 pb-3 space-y-1">
-                      <div className="inline-block px-2.5 py-0.5 rounded-full bg-blue-50 dark:bg-amber-500/10 text-blue-700 dark:text-amber-400 font-bold text-[11px] border border-blue-200 dark:border-amber-500/30">
-                        தமிழ்நாடு அரசு - நில அளவை மற்றும் நிலவரித் திட்டம் • FMB Survey Sheet
-                      </div>
-                      <h4 className="text-sm font-black text-slate-900 dark:text-white">
-                        Field Measurement Book (FMB) Sketch • புல எல்லை வரைபடம்
-                      </h4>
-                      <p className="text-[11px] text-slate-500 dark:text-slate-400">
-                        Survey No. {govFetchedData.surveyNo} • {govFetchedData.village}, {govFetchedData.taluk}
-                      </p>
-                    </div>
-
-                    {/* Vector FMB Blueprint Drawing */}
-                    <div className="p-4 rounded-xl bg-white dark:bg-slate-900/90 border border-slate-200 dark:border-slate-800 space-y-2">
-                      <div className="flex items-center justify-between text-[11px] text-slate-500 dark:text-slate-400">
-                        <span className="font-bold text-blue-700 dark:text-amber-400 flex items-center gap-1">
-                          <Layers className="w-3.5 h-3.5" />
-                          Visual Field Traverse & Stone Demarcation:
-                        </span>
-                        <span className="font-mono text-slate-600 dark:text-slate-300">Scale: 1:500 Metric | TSLR: {govFetchedData.tslrRecord}</span>
-                      </div>
-
-                      {/* SVG Field Diagram */}
-                      <div className="w-full flex justify-center py-2">
-                        <svg viewBox="0 0 500 240" className="w-full max-w-lg h-52 bg-slate-900 dark:bg-slate-950 rounded-xl border border-slate-200 dark:border-slate-800 p-2">
-                          {/* Grid background */}
-                          <defs>
-                            <pattern id="fmb-grid" width="20" height="20" patternUnits="userSpaceOnUse">
-                              <path d="M 20 0 L 0 0 0 20" fill="none" stroke="#1e293b" strokeWidth="0.5" />
-                            </pattern>
-                          </defs>
-                          <rect width="500" height="240" fill="url(#fmb-grid)" />
-
-                          {/* North Arrow */}
-                          <g transform="translate(450, 40)">
-                            <circle cx="0" cy="0" r="16" fill="#0f172a" stroke="#334155" strokeWidth="1" />
-                            <path d="M 0 -12 L 4 2 L 0 -1 L -4 2 Z" fill="#38bdf8" />
-                            <text x="0" y="14" fill="#38bdf8" fontSize="9" fontWeight="bold" textAnchor="middle">N</text>
-                          </g>
-
-                          {/* Main Parcel Polygon */}
-                          <rect x="130" y="55" width="240" height="130" fill="#0284c7" fillOpacity="0.12" stroke="#38bdf8" strokeWidth="2" strokeDasharray="1 0" />
-
-                          {/* Diagonal G-Line */}
-                          <line x1="130" y1="55" x2="370" y2="185" stroke="#f59e0b" strokeWidth="1" strokeDasharray="4 3" />
-                          <text x="255" y="115" fill="#f59e0b" fontSize="9" fontWeight="bold">G-Line 72.1 ft</text>
-
-                          {/* Corner Stone Markers */}
-                          <circle cx="130" cy="55" r="4" fill="#f59e0b" />
-                          <circle cx="370" cy="55" r="4" fill="#f59e0b" />
-                          <circle cx="370" cy="185" r="4" fill="#f59e0b" />
-                          <circle cx="130" cy="185" r="4" fill="#f59e0b" />
-
-                          {/* Center Parcel Label */}
-                          <text x="250" y="85" fill="#ffffff" fontSize="12" fontWeight="bold" textAnchor="middle">
-                            S.F. {govFetchedData.surveyNo}
-                          </text>
-                          <text x="250" y="100" fill="#94a3b8" fontSize="9" textAnchor="middle">
-                            Area: {govFetchedData.dimensions.totalArea}
-                          </text>
-
-                          {/* North Dimension & Adjacent Field */}
-                          <text x="250" y="45" fill="#38bdf8" fontSize="10" fontWeight="bold" textAnchor="middle">
-                            {govFetchedData.boundaries.north}
-                          </text>
-
-                          {/* South Dimension & Road */}
-                          <text x="250" y="205" fill="#38bdf8" fontSize="10" fontWeight="bold" textAnchor="middle">
-                            {govFetchedData.boundaries.south}
-                          </text>
-
-                          {/* East Dimension */}
-                          <text x="385" y="125" fill="#38bdf8" fontSize="9" fontWeight="bold">
-                            East: {govFetchedData.dimensions.eastBreadth}
-                          </text>
-
-                          {/* West Dimension */}
-                          <text x="45" y="125" fill="#38bdf8" fontSize="9" fontWeight="bold">
-                            West: {govFetchedData.dimensions.westBreadth}
-                          </text>
-                        </svg>
-                      </div>
-                    </div>
-
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-slate-700 dark:text-slate-300 text-[11px]">
-                      <div className="p-2.5 rounded-lg bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800">
-                        <span className="text-slate-500 block font-medium">North Boundary:</span>
-                        <span className="font-semibold text-slate-900 dark:text-white">{govFetchedData.boundaries.north}</span>
-                      </div>
-                      <div className="p-2.5 rounded-lg bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800">
-                        <span className="text-slate-500 block font-medium">South Boundary:</span>
-                        <span className="font-semibold text-slate-900 dark:text-white">{govFetchedData.boundaries.south}</span>
-                      </div>
-                      <div className="p-2.5 rounded-lg bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800">
-                        <span className="text-slate-500 block font-medium">East Boundary:</span>
-                        <span className="font-semibold text-slate-900 dark:text-white">{govFetchedData.boundaries.east}</span>
-                      </div>
-                      <div className="p-2.5 rounded-lg bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800">
-                        <span className="text-slate-500 block font-medium">West Boundary:</span>
-                        <span className="font-semibold text-slate-900 dark:text-white">{govFetchedData.boundaries.west}</span>
-                      </div>
-                    </div>
-
-                    <div className="p-3 rounded-lg bg-blue-50 dark:bg-amber-950/30 border border-blue-200 dark:border-amber-800/40 flex items-center justify-between text-[11px]">
-                      <span className="text-blue-800 dark:text-amber-400 font-bold flex items-center gap-1.5">
-                        <CheckCircle2 className="w-3.5 h-3.5 text-blue-600 dark:text-amber-400" />
-                        {govFetchedData.subdivisionStatus}
-                      </span>
-                      <span className="px-2 py-1 rounded bg-blue-100 dark:bg-amber-500/20 text-blue-800 dark:text-amber-300 font-mono font-bold text-xs shrink-0">
-                        FMB VERIFIED ✓
-                      </span>
-                    </div>
-                  </div>
-                )}
-
-                {/* Validation and Persist Button */}
-                <div className="flex justify-end gap-3 pt-2 border-t border-slate-100 dark:border-slate-800">
-                  <button
-                    type="button"
-                    onClick={() => setShowGovRevenueModal(false)}
-                    className="px-4 py-2 rounded-xl bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 font-semibold text-xs transition"
-                  >
-                    Cancel
-                  </button>
-                  <button
-                    type="button"
-                    onClick={handleApproveGovRevenueToDatabase}
-                    disabled={submitting}
-                    className="px-5 py-2 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs flex items-center gap-2 shadow-xs disabled:opacity-50 transition"
-                  >
-                    <CheckCircle2 className="w-4 h-4" />
-                    <span>{submitting ? 'Saving to Database...' : 'Validate & Save to Database'}</span>
-                  </button>
+              <div className="p-4 rounded-xl bg-slate-50 dark:bg-slate-950/60 border border-slate-200 dark:border-slate-800 space-y-3 text-xs">
+                <div className="font-bold text-emerald-700 dark:text-emerald-400 flex items-center gap-1.5">
+                  <CheckCircle2 className="w-4 h-4" />
+                  <span>Record Verified on Government e-Services</span>
                 </div>
+                <div className="text-[11px] text-slate-600 dark:text-slate-400 space-y-1">
+                  <div>Patta / Sketch: <strong>{govFetchedData.pattaNumber || govFetchedData.fmbNumber}</strong></div>
+                  <div>Holder: <strong>{govFetchedData.pattaHolder || currentCase.clientName}</strong></div>
+                  <div>Status: Clean & Verified</div>
+                </div>
+                <button
+                  type="button"
+                  onClick={handleApproveGovRevenueToDatabase}
+                  disabled={submitting}
+                  className="w-full py-2 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs transition shadow-xs cursor-pointer"
+                >
+                  Confirm & Save to Case Docket
+                </button>
               </div>
             )}
           </div>
         </div>
       )}
+
     </div>
   );
 }

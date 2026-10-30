@@ -94,3 +94,4 @@ export class LegalOpinionRepository {
 }
 
 export const legalOpinionRepository = new LegalOpinionRepository();
+
