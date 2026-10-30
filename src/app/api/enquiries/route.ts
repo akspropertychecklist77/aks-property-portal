@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
-import { executeQuery, executeRun } from '@/lib/db';
+import { enquiryService } from '@/lib/services/enquiryService';
+import { problemResponse, successResponse } from '@/lib/api/errors';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -14,95 +15,66 @@ export async function OPTIONS() {
 export async function GET(request: Request) {
   try {
     const { searchParams } = new URL(request.url);
-    const status = searchParams.get('status');
+    const status = searchParams.get('status') || undefined;
+    const searchTerm = searchParams.get('q') || searchParams.get('search') || undefined;
 
-    let sql = `SELECT * FROM enquiries`;
-    const params: any[] = [];
+    const data = await enquiryService.getTriageDeskData({ status, searchTerm });
 
-    if (status && status !== 'all') {
-      sql += ` WHERE status = ?`;
-      params.push(status);
-    }
-    sql += ` ORDER BY created_at DESC;`;
-
-    const enquiries = await executeQuery(sql, params);
-    return NextResponse.json(
-      { success: true, count: enquiries.length, data: enquiries },
-      { headers: corsHeaders }
+    return successResponse(
+      data.enquiries,
+      {
+        metrics: data.metrics,
+        count: data.enquiries.length,
+      },
+      200,
+      corsHeaders
     );
   } catch (error: any) {
-    console.error('Database Error in GET /api/enquiries:', error);
-    return NextResponse.json(
-      { success: false, error: error.message },
-      { status: 500, headers: corsHeaders }
-    );
+    console.error('Error in GET /api/enquiries:', error);
+    return problemResponse({
+      status: 500,
+      type: 'https://api.akspropertychecklist.in/errors/QUERY_ERROR',
+      title: 'Failed to Query Enquiries',
+      detail: error.message || 'An unexpected error occurred while fetching enquiries.',
+      req: request,
+      headers: corsHeaders,
+    });
   }
 }
 
 export async function POST(request: Request) {
   try {
-    const body = await request.json();
-    const {
-      client_name,
-      client_phone,
-      client_email,
-      service_package,
-      district,
-      property_address,
-      survey_number,
-      client_notes,
-      source,
-    } = body;
+    const body = await request.json().catch(() => ({}));
 
-    if (!client_name || !client_phone) {
-      return NextResponse.json(
-        { success: false, error: 'client_name and client_phone are required fields.' },
-        { status: 400, headers: corsHeaders }
-      );
-    }
+    const result = await enquiryService.registerInbound(body);
 
-    // Generate human-friendly Enquiry ID (e.g., ENQ-2026-419)
-    const enquiryId = `ENQ-${new Date().getFullYear()}-${Math.floor(100 + Math.random() * 900)}`;
-
-    await executeRun(
-      `INSERT INTO enquiries (
-        id, client_name, client_phone, client_email, service_package,
-        district, property_address, survey_number, client_notes, source, status
-      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'new');`,
-      [
-        enquiryId,
-        client_name,
-        client_phone,
-        client_email || null,
-        service_package || 'Legal Opinion (Standard)',
-        district || 'Coimbatore',
-        property_address || '',
-        survey_number || '',
-        client_notes || '',
-        source || 'website',
-      ]
-    );
-
-    return NextResponse.json(
+    return successResponse(
       {
-        success: true,
-        message: 'Enquiry successfully registered in intake staging buffer.',
-        enquiryId,
-        data: {
-          id: enquiryId,
-          client_name,
-          client_phone,
-          status: 'new',
-        },
+        id: result.id,
+        client_name: body.client_name,
+        client_phone: body.client_phone,
+        status: 'new',
+        isDuplicate: result.isDuplicate,
+        duplicateOf: result.duplicateOf,
       },
-      { headers: corsHeaders }
+      {
+        enquiryId: result.id,
+        message: result.isDuplicate
+          ? 'Enquiry with identical contact details was recently received. Staging buffer updated.'
+          : 'Enquiry successfully registered in intake staging buffer.',
+      },
+      result.isDuplicate ? 200 : 201,
+      corsHeaders
     );
   } catch (error: any) {
-    console.error('Database Error in POST /api/enquiries:', error);
-    return NextResponse.json(
-      { success: false, error: error.message },
-      { status: 500, headers: corsHeaders }
-    );
+    console.error('Error in POST /api/enquiries:', error);
+    return problemResponse({
+      status: error.message?.includes('required') ? 400 : 500,
+      type: 'https://api.akspropertychecklist.in/errors/INTAKE_ERROR',
+      title: 'Enquiry Registration Failed',
+      detail: error.message || 'An unexpected error occurred during lead registration.',
+      req: request,
+      headers: corsHeaders,
+    });
   }
 }
-

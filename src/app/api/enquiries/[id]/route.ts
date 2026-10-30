@@ -1,5 +1,7 @@
 import { NextResponse } from 'next/server';
-import { executeQueryOne, executeRun } from '@/lib/db';
+import { enquiryService } from '@/lib/services/enquiryService';
+import { authenticateRequest } from '@/lib/api/rbac';
+import { problemResponse, successResponse } from '@/lib/api/errors';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -17,28 +19,32 @@ export async function GET(
 ) {
   try {
     const { id } = await params;
-    const enquiry = await executeQueryOne(
-      `SELECT * FROM enquiries WHERE id = ?;`,
-      [id]
-    );
+    const cleanId = decodeURIComponent(id).trim();
+
+    const enquiry = await enquiryService.getEnquiryById(cleanId);
 
     if (!enquiry) {
-      return NextResponse.json(
-        { success: false, error: `Enquiry ${id} not found.` },
-        { status: 404, headers: corsHeaders }
-      );
+      return problemResponse({
+        status: 404,
+        type: 'https://api.akspropertychecklist.in/errors/ENQUIRY_NOT_FOUND',
+        title: 'Enquiry Not Found',
+        detail: `Enquiry with ID "${cleanId}" does not exist in staging buffer.`,
+        req: request,
+        headers: corsHeaders,
+      });
     }
 
-    return NextResponse.json(
-      { success: true, data: enquiry },
-      { headers: corsHeaders }
-    );
+    return successResponse(enquiry, { enquiryId: cleanId }, 200, corsHeaders);
   } catch (error: any) {
-    console.error('Database Error in GET /api/enquiries/[id]:', error);
-    return NextResponse.json(
-      { success: false, error: error.message },
-      { status: 500, headers: corsHeaders }
-    );
+    console.error('Error in GET /api/enquiries/[id]:', error);
+    return problemResponse({
+      status: 500,
+      type: 'https://api.akspropertychecklist.in/errors/QUERY_ERROR',
+      title: 'Database Query Failed',
+      detail: error.message || 'An unexpected error occurred.',
+      req: request,
+      headers: corsHeaders,
+    });
   }
 }
 
@@ -48,50 +54,55 @@ export async function PATCH(
 ) {
   try {
     const { id } = await params;
-    const body = await request.json();
+    const cleanId = decodeURIComponent(id).trim();
+
+    // Authenticate user
+    const { user } = await authenticateRequest(request, 'enquiries:read');
+
+    const body = await request.json().catch(() => ({}));
     const { status, rejection_reason, assigned_handler_id } = body;
 
     const validStatuses = ['new', 'contacted', 'accepted', 'rejected', 'spam'];
     if (status && !validStatuses.includes(status)) {
-      return NextResponse.json(
-        { success: false, error: `Invalid status. Must be one of: ${validStatuses.join(', ')}` },
-        { status: 400, headers: corsHeaders }
-      );
+      return problemResponse({
+        status: 400,
+        type: 'https://api.akspropertychecklist.in/errors/INVALID_STATUS',
+        title: 'Invalid Status Value',
+        detail: `Status must be one of: ${validStatuses.join(', ')}`,
+        req: request,
+        headers: corsHeaders,
+      });
     }
 
-    const updates: string[] = ['updated_at = CURRENT_TIMESTAMP'];
-    const values: any[] = [];
-
-    if (status) {
-      updates.push('status = ?');
-      values.push(status);
-    }
-    if (typeof rejection_reason !== 'undefined') {
-      updates.push('rejection_reason = ?');
-      values.push(rejection_reason);
-    }
-    if (typeof assigned_handler_id !== 'undefined') {
-      updates.push('assigned_handler_id = ?');
-      values.push(assigned_handler_id);
-    }
-
-    values.push(id);
-
-    await executeRun(
-      `UPDATE enquiries SET ${updates.join(', ')} WHERE id = ?;`,
-      values
+    await enquiryService.updateStatus(
+      cleanId,
+      status,
+      rejection_reason,
+      assigned_handler_id || user?.id
     );
 
-    return NextResponse.json(
-      { success: true, message: `Enquiry ${id} updated successfully.` },
-      { headers: corsHeaders }
+    return successResponse(
+      {
+        id: cleanId,
+        status,
+        rejectionReason: rejection_reason || null,
+        updatedBy: user?.username || 'staff',
+      },
+      {
+        message: `Enquiry ${cleanId} status successfully updated to "${status}".`,
+      },
+      200,
+      corsHeaders
     );
   } catch (error: any) {
-    console.error('Database Error in PATCH /api/enquiries/[id]:', error);
-    return NextResponse.json(
-      { success: false, error: error.message },
-      { status: 500, headers: corsHeaders }
-    );
+    console.error('Error in PATCH /api/enquiries/[id]:', error);
+    return problemResponse({
+      status: error.message?.includes('not found') ? 404 : 500,
+      type: 'https://api.akspropertychecklist.in/errors/UPDATE_ERROR',
+      title: 'Status Update Failed',
+      detail: error.message || 'An unexpected error occurred.',
+      req: request,
+      headers: corsHeaders,
+    });
   }
 }
-
