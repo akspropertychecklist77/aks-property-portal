@@ -261,3 +261,4 @@ export class WelcomeLetterService {
 }
 
 export const welcomeLetterService = new WelcomeLetterService();
+

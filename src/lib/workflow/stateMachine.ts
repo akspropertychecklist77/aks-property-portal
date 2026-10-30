@@ -98,7 +98,7 @@ export async function validateStageTransition({
 
   // 5. Automated Gate Validations
 
-  // GATE 1: Transition 3 -> 4 (80% Advance Fee Gate)
+  // GATE 1: Transition 3 -> 4 (80% Advance Fee & Welcome Letter Gate)
   if (toStage === 4) {
     const isAdvancePaid =
       caseItem.payment_status === 'advance_paid' ||
@@ -110,6 +110,24 @@ export async function validateStageTransition({
         reason: `Gate 1 Violation: Stage 4 (Job Card Docketing) strictly requires verified payment of 80% Advance Fee (Rs ${caseItem.advance_amount || 5200}). Current status is "${caseItem.payment_status}".`,
         gateViolated: 'GATE_1_ADVANCE_FEE_REQUIRED',
       };
+    }
+
+    // Check Welcome Letter dispatch status if a welcome letter exists for this case docket
+    try {
+      const welcomeLetter = await executeQueryOne<{ sent_status: string }>(
+        `SELECT sent_status FROM case_welcome_letters WHERE UPPER(case_id) = ?;`,
+        [caseItem.id]
+      );
+
+      if (welcomeLetter && welcomeLetter.sent_status !== 'sent') {
+        return {
+          allowed: false,
+          reason: `Gate 1 Violation: Stage 4 requires the Welcome Letter to be officially approved and dispatched to the client before opening the Job Card.`,
+          gateViolated: 'GATE_1_WELCOME_LETTER_NOT_SENT',
+        };
+      }
+    } catch {
+      // Table may be absent in non-migrated ephemeral test environments
     }
   }
 

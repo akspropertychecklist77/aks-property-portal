@@ -176,3 +176,4 @@ export class WelcomeLetterRepository {
 }
 
 export const welcomeLetterRepository = new WelcomeLetterRepository();
+
