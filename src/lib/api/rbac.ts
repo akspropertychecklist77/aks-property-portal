@@ -1,4 +1,4 @@
-import { AuthenticatedUser, extractSessionToken, validateSession } from './session';
+import { AuthenticatedUser, extractSessionToken, validateSession } from '@/lib/security/session';
 import { problemResponse } from '@/lib/api/errors';
 import { NextResponse } from 'next/server';
 
@@ -33,6 +33,7 @@ const ROLE_PERMISSIONS: Record<string, string[]> = {
     'parent_deeds:edit',
     'revenue:verify',
     'documents:upload',
+    'documents:delete',
     'documents:view_unwatermarked',
     'documents:view_watermarked',
     'billing:record_payment',
@@ -58,6 +59,7 @@ const ROLE_PERMISSIONS: Record<string, string[]> = {
     'parent_deeds:edit',
     'revenue:verify',
     'documents:upload',
+    'documents:delete',
     'documents:view_unwatermarked',
     'documents:view_watermarked',
     'billing:record_payment',
@@ -84,6 +86,7 @@ const ROLE_PERMISSIONS: Record<string, string[]> = {
     'parent_deeds:edit',
     'revenue:verify',
     'documents:upload',
+    'documents:delete',
     'documents:view_unwatermarked',
     'documents:view_watermarked',
     'billing:record_payment',
@@ -102,6 +105,7 @@ const ROLE_PERMISSIONS: Record<string, string[]> = {
     'parent_deeds:edit',
     'revenue:verify',
     'documents:upload',
+    'documents:delete',
     'documents:view_unwatermarked',
     'documents:view_watermarked',
   ],
@@ -118,6 +122,7 @@ const ROLE_PERMISSIONS: Record<string, string[]> = {
     'parent_deeds:edit',
     'revenue:verify',
     'documents:upload',
+    'documents:delete',
     'documents:view_unwatermarked',
     'documents:view_watermarked',
   ],

@@ -39,6 +39,7 @@ export interface ParentDocument {
   docNumber: string;
   year: string;
   deedType: string; // Sale Deed, Partition Deed, Settlement
+  sro?: string;
   executants: string;
   claimants: string;
   extent: string;
