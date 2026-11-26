@@ -1,5 +1,7 @@
 import { StageInfo } from './types';
 
+export const BRAND_ATTRIBUTION = 'AKS PROPERTY CHECKLIST is a Brand of GLOW DEZIGNERS';
+
 export const PROCESS_STAGES: StageInfo[] = [
   {
     id: '1_ENQUIRY',

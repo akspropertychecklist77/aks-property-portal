@@ -4,6 +4,7 @@ import { useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { ShieldCheck, Lock, User, Eye, EyeOff, ArrowRight, Scale, AlertCircle } from "lucide-react";
+import { PortalFooter } from "@/components/ui/PortalFooter";
 
 export default function LoginPage() {
   const router = useRouter();
@@ -148,6 +149,7 @@ export default function LoginPage() {
             ← Return to Client Tracking Gateway
           </Link>
         </div>
+        <PortalFooter variant="minimal" />
       </div>
     </div>
   );

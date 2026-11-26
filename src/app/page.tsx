@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { ShieldCheck, Search, ArrowRight, FileText, CheckCircle2, Phone, Lock, Scale, Clock, Award } from 'lucide-react';
 import { PROCESS_STAGES } from '@/lib/constants';
+import { PortalFooter } from '@/components/ui/PortalFooter';
 
 export default function PortalHomePage() {
   const [caseQuery, setCaseQuery] = useState('');
@@ -158,15 +159,7 @@ export default function PortalHomePage() {
       </main>
 
       {/* Footer */}
-      <footer className="border-t border-slate-800/80 bg-slate-900 py-8 text-center text-xs text-slate-500">
-        <div className="max-w-7xl mx-auto px-4 flex flex-col sm:flex-row items-center justify-between gap-4">
-          <p>© 2026 AKS Property Checklist. All Rights Reserved.</p>
-          <p className="flex items-center gap-1.5 justify-center">
-            <Lock className="w-3.5 h-3.5 text-amber-500" />
-            Protected by Advocate-Client Confidentiality Privileges
-          </p>
-        </div>
-      </footer>
+      <PortalFooter variant="gateway" />
     </div>
   );
 }

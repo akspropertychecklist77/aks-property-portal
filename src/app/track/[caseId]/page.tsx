@@ -23,6 +23,7 @@ import {
 import { INITIAL_CASES } from '@/lib/data';
 import { PROCESS_STAGES } from '@/lib/constants';
 import { ClientCase, ProcessStage } from '@/lib/types';
+import { PortalFooter } from '@/components/ui/PortalFooter';
 
 export default function ClientTrackPage({ params }: { params: Promise<{ caseId: string }> }) {
   const unwrappedParams = use(params);
@@ -569,6 +570,7 @@ export default function ClientTrackPage({ params }: { params: Promise<{ caseId: 
         )}
 
       </main>
+      <PortalFooter variant="client" />
     </div>
   );
 }

@@ -23,6 +23,7 @@ import {
   Sun,
   Moon
 } from 'lucide-react';
+import { PortalFooter } from '@/components/ui/PortalFooter';
 
 export default function AdminLayout({
   children,
@@ -231,8 +232,11 @@ export default function AdminLayout({
         </header>
 
         {/* Content Body */}
-        <main className="flex-1 p-4 sm:p-6 lg:p-8 overflow-y-auto bg-slate-50 dark:bg-slate-950">
-          {children}
+        <main className="flex-1 p-4 sm:p-6 lg:p-8 overflow-y-auto bg-slate-50 dark:bg-slate-950 flex flex-col">
+          <div className="flex-1">
+            {children}
+          </div>
+          <PortalFooter variant="compact" />
         </main>
       </div>
     </div>
